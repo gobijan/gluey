@@ -16,12 +16,6 @@ import (
 //	    Page("home", "/")
 //	})
 func WebApp(name string, fn func()) *expr.AppExpr {
-	// Check we're at the top level
-	if eval.Current() != nil {
-		eval.IncompatibleDSL()
-		return nil
-	}
-
 	// Create the app expression
 	app := &expr.AppExpr{
 		Name:    name,
@@ -32,10 +26,8 @@ func WebApp(name string, fn func()) *expr.AppExpr {
 	expr.Root = app
 	eval.SetRoot(app)
 
-	// Execute the DSL immediately
-	if fn != nil {
-		eval.Execute(fn, app)
-	}
+	// Don't execute the DSL here - let RunDSL do it
+	// The DSL will be executed during eval.RunDSL()
 
 	return app
 }

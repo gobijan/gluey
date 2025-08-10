@@ -58,34 +58,21 @@ For more information, visit: https://gluey.dev`)
 }
 
 func runGenerate() {
-	fmt.Println("🔨 Generating code from DSL...")
-	
-	// Check if design/app.go exists
-	designFile := filepath.Join("design", "app.go")
-	if _, err := os.Stat(designFile); os.IsNotExist(err) {
-		fmt.Printf("Error: %s not found\n", designFile)
-		fmt.Println("Make sure you're in a Gluey project directory")
+	if err := runGenerateImpl(); err != nil {
+		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
-
-	// TODO: Implement actual generation
-	// 1. Build and run the design package
-	// 2. Execute the DSL
-	// 3. Generate code from expressions
-	
-	fmt.Println("✅ Code generation complete!")
-	fmt.Println("\nGenerated files in gen/webapp/")
 }
 
 func runNew(projectName string) {
 	fmt.Printf("🚀 Creating new Gluey project: %s\n", projectName)
-	
+
 	// Create project directory
 	if err := os.Mkdir(projectName, 0755); err != nil {
 		fmt.Printf("Error creating directory: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	// Create subdirectories
 	dirs := []string{
 		filepath.Join(projectName, "design"),
@@ -95,14 +82,14 @@ func runNew(projectName string) {
 		filepath.Join(projectName, "public", "css"),
 		filepath.Join(projectName, "public", "js"),
 	}
-	
+
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			fmt.Printf("Error creating directory %s: %v\n", dir, err)
 			os.Exit(1)
 		}
 	}
-	
+
 	// Create design/app.go
 	designContent := fmt.Sprintf(`package design
 
@@ -127,13 +114,13 @@ var _ = WebApp("%s", func() {
 	})
 })
 `, projectName, projectName)
-	
+
 	designFile := filepath.Join(projectName, "design", "app.go")
 	if err := os.WriteFile(designFile, []byte(designContent), 0644); err != nil {
 		fmt.Printf("Error creating design file: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	// Create go.mod
 	goModContent := fmt.Sprintf(`module %s
 
@@ -141,13 +128,13 @@ go 1.21
 
 require gluey.dev/gluey v%s
 `, projectName, version)
-	
+
 	goModFile := filepath.Join(projectName, "go.mod")
 	if err := os.WriteFile(goModFile, []byte(goModContent), 0644); err != nil {
 		fmt.Printf("Error creating go.mod: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	// Create main.go
 	mainContent := `package main
 
@@ -174,17 +161,17 @@ func main() {
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("public"))))
 	
 	// Start server
-	fmt.Println("🚀 Server starting on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	fmt.Println("🚀 Server starting on http://localhost:8000")
+	log.Fatal(http.ListenAndServe(":8000", mux))
 }
 `
-	
+
 	mainFile := filepath.Join(projectName, "main.go")
 	if err := os.WriteFile(mainFile, []byte(mainContent), 0644); err != nil {
 		fmt.Printf("Error creating main.go: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	// Create README
 	readmeContent := fmt.Sprintf(`# %s
 
@@ -193,18 +180,18 @@ A Gluey web application.
 ## Getting Started
 
 1. Generate code from DSL:
-   ` + "```bash" + `
+   `+"```bash"+`
    gluey gen
-   ` + "```" + `
+   `+"```"+`
 
 2. Implement your controllers in app/controllers/
 
 3. Run the application:
-   ` + "```bash" + `
+   `+"```bash"+`
    go run main.go
-   ` + "```" + `
+   `+"```"+`
 
-4. Visit http://localhost:8080
+4. Visit http://localhost:8000
 
 ## Project Structure
 
@@ -217,13 +204,13 @@ A Gluey web application.
 
 Visit https://gluey.dev for documentation.
 `, projectName)
-	
+
 	readmeFile := filepath.Join(projectName, "README.md")
 	if err := os.WriteFile(readmeFile, []byte(readmeContent), 0644); err != nil {
 		fmt.Printf("Error creating README: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	// Create .gitignore
 	gitignoreContent := `# Generated files
 /gen/
@@ -247,13 +234,13 @@ go.work.sum
 *~
 .DS_Store
 `
-	
+
 	gitignoreFile := filepath.Join(projectName, ".gitignore")
 	if err := os.WriteFile(gitignoreFile, []byte(gitignoreContent), 0644); err != nil {
 		fmt.Printf("Error creating .gitignore: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	fmt.Printf("\n✅ Project '%s' created successfully!\n\n", projectName)
 	fmt.Println("Next steps:")
 	fmt.Printf("  cd %s\n", projectName)

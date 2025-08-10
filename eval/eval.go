@@ -16,7 +16,7 @@ func RunDSL() error {
 	// Phase 1: Execute DSL functions
 	if src, ok := root.(Source); ok {
 		if dsl := src.DSL(); dsl != nil {
-			dsl()
+			Execute(dsl, root)
 		}
 	}
 	root.WalkSets(executeSet)
