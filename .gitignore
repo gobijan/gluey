@@ -33,7 +33,7 @@ go.work.sum
 
 # Test applications
 testapp/
-testapp
+blogapp/
 
-# Generated binary
-gluey
+# Generated binary in root only
+/gluey

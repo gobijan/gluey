@@ -12,9 +12,9 @@ import (
 	"gluey.dev/gluey/expr"
 )
 
-// runGenerateImpl executes the code generation.
+// runGenerateImpl executes the interface generation.
 func runGenerateImpl() error {
-	fmt.Println("🔨 Generating code from DSL...")
+	fmt.Println("🔨 Generating interfaces and contracts from DSL...")
 
 	// Check if design/app.go exists
 	designFile := filepath.Join("design", "app.go")
@@ -60,14 +60,14 @@ func main() {
 		log.Fatal("No WebApp found in design")
 	}
 	
-	// Generate code
-	gen := codegen.NewGenerator(expr.Root, "gen/webapp")
+	// Generate interfaces only
+	gen := codegen.NewInterfaceGenerator(expr.Root, "gen")
 	if err := gen.Generate(); err != nil {
-		log.Fatal("Code generation failed:", err)
+		log.Fatal("Interface generation failed:", err)
 	}
 	
-	fmt.Println("✅ Code generation complete!")
-	fmt.Println("\nGenerated files in gen/webapp/")
+	fmt.Println("✅ Interface generation complete!")
+	fmt.Println("\nGenerated files in gen/")
 }
 `, moduleName)
 
@@ -143,7 +143,7 @@ func main() {
 		log.Fatal(err)
 	}
 	
-	gen := codegen.NewGenerator(expr.Root, "gen/webapp")
+	gen := codegen.NewInterfaceGenerator(expr.Root, "gen")
 	if err := gen.Generate(); err != nil {
 		log.Fatal(err)
 	}

@@ -19,6 +19,8 @@ func main() {
 	switch command {
 	case "gen", "generate":
 		runGenerate()
+	case "example":
+		runExampleCommand()
 	case "new":
 		if len(os.Args) < 3 {
 			fmt.Println("Error: 'new' command requires a project name")
@@ -45,13 +47,15 @@ Usage:
 
 Commands:
   new <name>    Create a new Gluey project
-  gen           Generate code from DSL (alias: generate)
+  gen           Generate interfaces and contracts from DSL (alias: generate)
+  example       Generate example implementation (only creates new files)
   version       Show version information
   help          Show this help message
 
 Examples:
   gluey new myapp       # Create a new project called 'myapp'
-  gluey gen            # Generate code from design/app.go
+  gluey gen            # Generate interfaces from design/app.go
+  gluey example        # Generate example controllers and views
   gluey version        # Show version
 
 For more information, visit: https://gluey.dev`)
@@ -59,6 +63,13 @@ For more information, visit: https://gluey.dev`)
 
 func runGenerate() {
 	if err := runGenerateImpl(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func runExampleCommand() {
+	if err := runExample(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -144,21 +155,21 @@ import (
 	"net/http"
 	
 	"` + projectName + `/app/controllers"
-	"` + projectName + `/gen/webapp/` + projectName + `"
+	genhttp "` + projectName + `/gen/http"
 )
 
 func main() {
 	// Initialize controllers
-	controllers := &controllers.Controllers{
+	ctrls := genhttp.Controllers{
 		// Initialize your controllers here
+		// Example:
+		// Posts: controllers.NewPosts(),
+		// Pages: controllers.NewPagesController(),
 	}
 	
 	// Setup routes
 	mux := http.NewServeMux()
-	webapp.MountRoutes(mux, controllers)
-	
-	// Serve static files
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("public"))))
+	genhttp.MountRoutes(mux, ctrls)
 	
 	// Start server
 	fmt.Println("🚀 Server starting on http://localhost:8000")
@@ -179,19 +190,24 @@ A Gluey web application.
 
 ## Getting Started
 
-1. Generate code from DSL:
+1. Generate interfaces from DSL:
    `+"```bash"+`
    gluey gen
    `+"```"+`
 
-2. Implement your controllers in app/controllers/
+2. Generate example implementation:
+   `+"```bash"+`
+   gluey example
+   `+"```"+`
 
-3. Run the application:
+3. Customize controllers in app/controllers/
+
+4. Run the application:
    `+"```bash"+`
    go run main.go
    `+"```"+`
 
-4. Visit http://localhost:8000
+5. Visit http://localhost:8000
 
 ## Project Structure
 
