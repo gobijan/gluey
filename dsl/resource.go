@@ -44,7 +44,7 @@ func Resource(name string, fn ...func()) {
 			}
 			if len(fn) > 0 {
 				nested.DSLFunc = fn[0]
-				eval.Execute(fn[0], nested)
+				// Don't execute here - let RunDSL handle it
 			}
 			// Add to parent app
 			if app := expr.Root; app != nil {
@@ -62,7 +62,7 @@ func Resource(name string, fn ...func()) {
 
 	if len(fn) > 0 {
 		resource.DSLFunc = fn[0]
-		eval.Execute(fn[0], resource)
+		// Don't execute here - let RunDSL handle it
 	}
 
 	app.Resources = append(app.Resources, resource)

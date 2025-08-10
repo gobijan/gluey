@@ -48,7 +48,7 @@ func Page(name string, args ...interface{}) {
 		case func():
 			// It's a DSL function
 			page.DSLFunc = v
-			eval.Execute(v, page)
+			// Don't execute here - let RunDSL handle it
 		default:
 			eval.InvalidArgError("path string or DSL function", arg)
 		}

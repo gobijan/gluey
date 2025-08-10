@@ -42,10 +42,7 @@ func Type(name string, fn func()) {
 		DSLFunc: fn,
 	}
 
-	if fn != nil {
-		eval.Execute(fn, form)
-	}
-
+	// Don't execute here - let RunDSL handle it
 	app.Forms = append(app.Forms, form)
 }
 
