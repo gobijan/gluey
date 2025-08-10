@@ -45,7 +45,7 @@ Create `design/app.go`:
 ```go
 package design
 
-import . "gluey.dev/gluey/dsl"
+import . "github.com/gobijan/gluey/dsl"
 
 var _ = WebApp("blogapp", func() {
     Description("A simple blog application")
@@ -151,7 +151,7 @@ Here's a more complete example showing advanced features:
 ```go
 package design
 
-import . "gluey.dev/gluey/dsl"
+import . "github.com/gobijan/gluey/dsl"
 
 var _ = WebApp("myapp", func() {
     Description("E-commerce platform")

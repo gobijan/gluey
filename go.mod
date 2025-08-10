@@ -1,7 +1,7 @@
-module gluey.dev/gluey
+module github.com/gobijan/gluey
 
-go 1.24.6
+go 1.23.0
 
-replace gluey.dev/gluey => ..
+toolchain go1.24.6
 
-require golang.org/x/mod v0.27.0 // indirect
+require golang.org/x/mod v0.27.0

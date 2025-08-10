@@ -1,6 +1,6 @@
 package design
 
-import . "gluey.dev/gluey/dsl"
+import . "github.com/gobijan/gluey/dsl"
 
 var _ = WebApp("blog", func() {
 	Description("A simple blog application demonstrating Gluey features")

@@ -196,7 +196,7 @@ example-app: build
 	@$(BUILD_DIR)/$(BINARY_NAME) new example_app
 	@cd $(EXAMPLE_DIR) && \
 		$(GOMOD) init example_app && \
-		$(GOMOD) edit -replace gluey.dev/gluey=../ && \
+		$(GOMOD) edit -replace github.com/gobijan/gluey=../ && \
 		$(GOMOD) tidy && \
 		echo "$(YELLOW)Generating interfaces...$(NC)" && \
 		$(GOCMD) run -mod=mod ../$(BUILD_DIR)/$(BINARY_NAME) gen && \

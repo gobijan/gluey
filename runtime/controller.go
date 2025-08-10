@@ -58,10 +58,10 @@ func (c *BaseController) Render(w http.ResponseWriter, templateName string, data
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	
+
 	// Wrap data with flash messages if available
 	viewData := map[string]any{
-		"Data": data,
+		"Data":  data,
 		"Flash": c.getFlash(w, nil),
 	}
 
@@ -76,15 +76,15 @@ func (c *BaseController) Render(w http.ResponseWriter, templateName string, data
 // JSON sends a JSON response.
 func (c *BaseController) JSON(w http.ResponseWriter, data any) error {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
-	
+
 	if err := encoder.Encode(data); err != nil {
 		http.Error(w, "JSON encoding error", http.StatusInternalServerError)
 		return fmt.Errorf("failed to encode JSON: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -111,7 +111,7 @@ func (c *BaseController) Bind(r *http.Request, dest any) error {
 	// Simple form binding - in production, use a proper form binding library
 	// This is a basic implementation for the MVP
 	// TODO: Implement proper form binding with struct tags
-	
+
 	return nil
 }
 
@@ -123,14 +123,14 @@ func (c *BaseController) Param(r *http.Request, name string) string {
 // Params gets all URL parameters.
 func (c *BaseController) Params(r *http.Request) map[string]string {
 	params := make(map[string]string)
-	
+
 	// Get query parameters
 	for key, values := range r.URL.Query() {
 		if len(values) > 0 {
 			params[key] = values[0]
 		}
 	}
-	
+
 	// In Go 1.22+, we can use r.PathValue for route params
 	// For now, return query params
 	return params
@@ -156,12 +156,12 @@ func (c *BaseController) getFlash(w http.ResponseWriter, r *http.Request) map[st
 
 	flash := make(map[string]string)
 	levels := []string{"success", "error", "warning", "info"}
-	
+
 	for _, level := range levels {
 		cookie, err := r.Cookie("flash_" + level)
 		if err == nil && cookie.Value != "" {
 			flash[level] = cookie.Value
-			
+
 			// Clear the flash message
 			clearCookie := &http.Cookie{
 				Name:     "flash_" + level,
@@ -173,7 +173,7 @@ func (c *BaseController) getFlash(w http.ResponseWriter, r *http.Request) map[st
 			http.SetCookie(w, clearCookie)
 		}
 	}
-	
+
 	return flash
 }
 

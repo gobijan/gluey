@@ -1,8 +1,8 @@
 package dsl
 
 import (
-	"gluey.dev/gluey/eval"
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/eval"
+	"github.com/gobijan/gluey/expr"
 )
 
 // Resource defines a RESTful resource.
@@ -108,7 +108,7 @@ func Auth(requirement string) *authBuilder {
 	}
 
 	return &authBuilder{
-		resource:     resource,
+		resource:    resource,
 		requirement: requirement,
 	}
 }
@@ -135,7 +135,7 @@ func (a *authBuilder) Except(actions ...string) *authBuilder {
 	for _, action := range allActions {
 		if !excluded[action] {
 			a.resource.AuthRequirements[action] = append(
-				a.resource.AuthRequirements[action], 
+				a.resource.AuthRequirements[action],
 				a.requirement,
 			)
 		}

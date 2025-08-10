@@ -57,9 +57,9 @@ import (
 	"path/filepath"
 	
 	_ "%s/design"
-	"gluey.dev/gluey/codegen"
-	"gluey.dev/gluey/eval"
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/codegen"
+	"github.com/gobijan/gluey/eval"
+	"github.com/gobijan/gluey/expr"
 )
 
 func main() {
@@ -104,17 +104,17 @@ go %s
 
 require (
 	%s v0.0.0
-	gluey.dev/gluey v0.0.0
+	github.com/gobijan/gluey v0.0.0
 )
 
 replace %s => %s
-replace gluey.dev/gluey => %s
-`, 
+replace github.com/gobijan/gluey => %s
+`,
 		strings.TrimPrefix(modFile.Go.Version, "go"),
 		moduleName,
 		moduleName, cwd,
 		getGlueyPath())
-	
+
 	tmpGoMod := filepath.Join(tmpDir, "go.mod")
 	if err := os.WriteFile(tmpGoMod, []byte(tmpGoModContent), 0644); err != nil {
 		return fmt.Errorf("failed to write temp go.mod: %w", err)
@@ -131,11 +131,11 @@ replace gluey.dev/gluey => %s
 	cmd := exec.Command("go", "run", mainFile)
 	cmd.Dir = tmpDir // Run in the temp directory
 	// Pass environment variables
-	cmd.Env = append(os.Environ(), 
+	cmd.Env = append(os.Environ(),
 		"GLUEY_OUTPUT="+cwd,
 		"GLUEY_VERSION="+glueyVersion,
 		"GLUEY_COMMAND=gluey gen "+strings.Join(os.Args[2:], " "))
-	
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(string(output))
@@ -153,27 +153,27 @@ func getGlueyPath() string {
 	// First, check if we're in the Gluey repo itself
 	if _, err := os.Stat(filepath.Join(".", "go.mod")); err == nil {
 		if content, err := os.ReadFile("go.mod"); err == nil {
-			if strings.Contains(string(content), "module gluey.dev/gluey") {
+			if strings.Contains(string(content), "module github.com/gobijan/gluey") {
 				cwd, _ := os.Getwd()
 				return cwd
 			}
 		}
 	}
-	
+
 	// Check parent directories (for examples)
 	for i := 1; i <= 3; i++ {
 		parentPath := strings.Repeat("../", i)
 		goModPath := filepath.Join(parentPath, "go.mod")
 		if _, err := os.Stat(goModPath); err == nil {
 			if content, err := os.ReadFile(goModPath); err == nil {
-				if strings.Contains(string(content), "module gluey.dev/gluey") {
+				if strings.Contains(string(content), "module github.com/gobijan/gluey") {
 					abs, _ := filepath.Abs(parentPath)
 					return abs
 				}
 			}
 		}
 	}
-	
+
 	// Default: assume it's available as a module
 	return ""
 }

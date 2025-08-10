@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/expr"
 )
 
 // ExampleGenerator generates example implementations.
@@ -32,48 +32,48 @@ func (g *ExampleGenerator) Generate() error {
 		filepath.Join(g.OutputDir, "app/views/layouts"),
 		filepath.Join(g.OutputDir, "app/views/shared"),
 	}
-	
+
 	// Add view directories for each resource
 	for _, resource := range g.app.Resources {
 		dirs = append(dirs, filepath.Join(g.OutputDir, "app/views", resource.Name))
 	}
-	
+
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}
-	
+
 	// Generate base controller (if doesn't exist)
 	if err := g.generateBaseController(); err != nil {
 		return err
 	}
-	
+
 	// Generate example controllers (if don't exist)
 	for _, resource := range g.app.Resources {
 		if err := g.generateResourceController(resource); err != nil {
 			return err
 		}
 	}
-	
+
 	// Generate pages controller (if doesn't exist)
 	if len(g.app.Pages) > 0 {
 		if err := g.generatePagesController(); err != nil {
 			return err
 		}
 	}
-	
+
 	// Generate views (if don't exist)
 	if err := g.generateViews(); err != nil {
 		return err
 	}
-	
+
 	fmt.Println("✅ Example files generated in app/")
 	fmt.Println("\nCreated:")
 	fmt.Println("  - app/controllers/ - Example controller implementations")
 	fmt.Println("  - app/views/ - HTML templates")
 	fmt.Println("\nThese files are yours to modify. They won't be overwritten.")
-	
+
 	return nil
 }
 
@@ -90,7 +90,7 @@ func (g *ExampleGenerator) generateBaseController() error {
 		fmt.Printf("  Skipping %s (already exists)\n", filename)
 		return nil
 	}
-	
+
 	content := `package controllers
 
 import (
@@ -164,7 +164,7 @@ func (c *BaseController) Flash(w http.ResponseWriter, typ, message string) {
 	})
 }
 `
-	
+
 	fmt.Printf("  Creating %s\n", filename)
 	return os.WriteFile(filename, []byte(content), 0644)
 }
@@ -176,10 +176,10 @@ func (g *ExampleGenerator) generateResourceController(resource *expr.ResourceExp
 		fmt.Printf("  Skipping %s (already exists)\n", filename)
 		return nil
 	}
-	
+
 	singular := toSingular(resource.Name)
 	controllerType := resource.Name + "Controller"
-	
+
 	content := fmt.Sprintf(`package controllers
 
 import (
@@ -326,7 +326,7 @@ func (c *%s) Destroy(w http.ResponseWriter, r *http.Request) {
 		strings.Title(singular),
 		resource.Name,
 	)
-	
+
 	fmt.Printf("  Creating %s\n", filename)
 	return os.WriteFile(filename, []byte(content), 0644)
 }
@@ -338,7 +338,7 @@ func (g *ExampleGenerator) generatePagesController() error {
 		fmt.Printf("  Skipping %s (already exists)\n", filename)
 		return nil
 	}
-	
+
 	content := fmt.Sprintf(`package controllers
 
 import (
@@ -358,7 +358,7 @@ func NewPagesController() interfaces.PagesController {
 	}
 }
 `, g.app.Name)
-	
+
 	// Add method for each page
 	for _, page := range g.app.Pages {
 		for _, route := range page.Routes {
@@ -366,7 +366,7 @@ func NewPagesController() interfaces.PagesController {
 			if route.Method != "GET" {
 				methodName += toTitle(strings.ToLower(route.Method))
 			}
-			
+
 			content += fmt.Sprintf(`
 // %s handles %s %s
 func (c *pagesController) %s(w http.ResponseWriter, r *http.Request) {
@@ -377,7 +377,7 @@ func (c *pagesController) %s(w http.ResponseWriter, r *http.Request) {
 `, methodName, route.Method, route.Path, methodName, page.Name, strings.Title(page.Name))
 		}
 	}
-	
+
 	fmt.Printf("  Creating %s\n", filename)
 	return os.WriteFile(filename, []byte(content), 0644)
 }
@@ -388,19 +388,19 @@ func (g *ExampleGenerator) generateViews() error {
 	if err := g.generateLayout(); err != nil {
 		return err
 	}
-	
+
 	// Generate shared partials
 	if err := g.generateSharedViews(); err != nil {
 		return err
 	}
-	
+
 	// Generate resource views
 	for _, resource := range g.app.Resources {
 		if err := g.generateResourceViews(resource); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -411,16 +411,16 @@ func (g *ExampleGenerator) generateLayout() error {
 		fmt.Printf("  Skipping %s (already exists)\n", filename)
 		return nil
 	}
-	
+
 	viewGen := NewViewsGenerator(g.app)
 	content, _ := viewGen.GenerateLayout()
-	
+
 	// Update to use template blocks
-	content = strings.Replace(content, 
+	content = strings.Replace(content,
 		`{{template "content" .Data}}`,
 		`{{template .View .}}`,
 		1)
-	
+
 	fmt.Printf("  Creating %s\n", filename)
 	return os.WriteFile(filename, []byte(content), 0644)
 }
@@ -428,7 +428,7 @@ func (g *ExampleGenerator) generateLayout() error {
 // generateSharedViews generates shared view partials.
 func (g *ExampleGenerator) generateSharedViews() error {
 	viewGen := NewViewsGenerator(g.app)
-	
+
 	// Generate errors partial
 	filename := filepath.Join(g.OutputDir, "app/views/shared/_errors.html")
 	if !fileExists(filename) {
@@ -438,7 +438,7 @@ func (g *ExampleGenerator) generateSharedViews() error {
 			return err
 		}
 	}
-	
+
 	// Generate flash partial
 	filename = filepath.Join(g.OutputDir, "app/views/shared/_flash.html")
 	if !fileExists(filename) {
@@ -448,7 +448,7 @@ func (g *ExampleGenerator) generateSharedViews() error {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -459,26 +459,26 @@ func (g *ExampleGenerator) generateResourceViews(resource *expr.ResourceExpr) er
 	if err != nil {
 		return err
 	}
-	
+
 	for name, content := range views {
 		filename := filepath.Join(g.OutputDir, "app/views", resource.Name, name)
 		if fileExists(filename) {
 			fmt.Printf("  Skipping %s (already exists)\n", filename)
 			continue
 		}
-		
+
 		// Update template definition
 		content = strings.Replace(content,
 			`{{define "content"}}`,
 			fmt.Sprintf(`{{define "%s/%s"}}`, resource.Name, strings.TrimSuffix(name, ".html")),
 			1)
-		
+
 		fmt.Printf("  Creating %s\n", filename)
 		if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 

@@ -104,7 +104,7 @@ func runNew(projectName string) {
 	// Create design/app.go
 	designContent := fmt.Sprintf(`package design
 
-import . "gluey.dev/gluey/dsl"
+import . "github.com/gobijan/gluey/dsl"
 
 var _ = WebApp("%s", func() {
 	Description("My %s application")
@@ -137,7 +137,7 @@ var _ = WebApp("%s", func() {
 
 go 1.21
 
-require gluey.dev/gluey v%s
+require github.com/gobijan/gluey v%s
 `, projectName, Version)
 
 	goModFile := filepath.Join(projectName, "go.mod")

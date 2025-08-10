@@ -1,6 +1,6 @@
 package design
 
-import . "gluey.dev/gluey/dsl"
+import . "github.com/gobijan/gluey/dsl"
 
 var _ = WebApp("todo", func() {
 	Description("A simple todo list application")
@@ -15,7 +15,7 @@ var _ = WebApp("todo", func() {
 		// GET    /todos/{id}/edit - Show edit form
 		// PUT    /todos/{id}     - Update todo
 		// DELETE /todos/{id}     - Delete todo
-		
+
 		Index(func() {
 			Filterable("status", "priority")
 		})

@@ -19,7 +19,7 @@ A complete blog application demonstrating Gluey's features.
 
 # 1. Initialize the module (if not already done)
 go mod init blog
-go mod edit -replace gluey.dev/gluey=../..
+go mod edit -replace github.com/gobijan/gluey=../..
 
 # 2. Generate interfaces and types
 gluey gen design

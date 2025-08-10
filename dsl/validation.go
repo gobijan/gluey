@@ -1,8 +1,8 @@
 package dsl
 
 import (
-	"gluey.dev/gluey/eval"
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/eval"
+	"github.com/gobijan/gluey/expr"
 )
 
 // Format constants
@@ -87,7 +87,6 @@ func Format(format string) expr.Validation {
 	return &expr.FormatValidation{Format: format}
 }
 
-
 // Pattern sets a regex pattern for validation.
 //
 // Pattern must appear in an Attribute expression.
@@ -171,5 +170,3 @@ func Validation(fn func()) {
 	// This is a placeholder for custom validation logic
 	// In a real implementation, this would register the validation
 }
-
-

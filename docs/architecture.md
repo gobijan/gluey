@@ -156,7 +156,7 @@ Code that generated apps depend on:
 Generated code imports this package:
 
 ```go
-import "gluey.dev/gluey/runtime"
+import "github.com/gobijan/gluey/runtime"
 
 type PostsController struct {
     *runtime.BaseController

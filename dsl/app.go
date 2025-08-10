@@ -2,9 +2,9 @@ package dsl
 
 import (
 	"fmt"
-	
-	"gluey.dev/gluey/eval"
-	"gluey.dev/gluey/expr"
+
+	"github.com/gobijan/gluey/eval"
+	"github.com/gobijan/gluey/expr"
 )
 
 // WebApp defines a web application.

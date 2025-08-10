@@ -31,7 +31,7 @@ Each example can be run independently:
 ```bash
 cd examples/[example-name]
 go mod init [example-name]
-go mod edit -replace gluey.dev/gluey=../../
+go mod edit -replace github.com/gobijan/gluey=../../
 gluey gen design
 gluey example design
 go run main.go

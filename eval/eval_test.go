@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"gluey.dev/gluey/eval"
+	"github.com/gobijan/gluey/eval"
 )
 
 // TestExpression is a test implementation of Expression

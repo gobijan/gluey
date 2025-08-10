@@ -70,23 +70,23 @@ func DefaultFuncMap() template.FuncMap {
 		"upper": strings.ToUpper,
 		"lower": strings.ToLower,
 		"title": strings.Title,
-		
+
 		// Path helpers
-		"link_to": linkTo,
+		"link_to":  linkTo,
 		"path_for": pathFor,
-		
+
 		// Form helpers
-		"form_for": formFor,
+		"form_for":   formFor,
 		"text_field": textField,
-		"submit": submitButton,
-		
+		"submit":     submitButton,
+
 		// Formatting
-		"truncate": truncate,
+		"truncate":  truncate,
 		"pluralize": pluralize,
-		
+
 		// Safety
 		"safe": safe,
-		"raw": raw,
+		"raw":  raw,
 	}
 }
 
@@ -108,13 +108,13 @@ func pathFor(resource string, args ...any) string {
 func formFor(resource string, args ...any) template.HTML {
 	method := "POST"
 	action := "/" + resource
-	
+
 	if len(args) > 0 {
 		// Assume it's an edit form
 		action = fmt.Sprintf("/%s/%v", resource, args[0])
 		method = "POST" // Will add _method=PUT hidden field
 	}
-	
+
 	return template.HTML(fmt.Sprintf(`<form method="%s" action="%s">`, method, action))
 }
 
@@ -156,4 +156,3 @@ func safe(s string) template.HTML {
 func raw(s string) template.HTML {
 	return template.HTML(s)
 }
-

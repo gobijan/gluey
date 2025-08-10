@@ -3,9 +3,9 @@ package dsl_test
 import (
 	"testing"
 
-	"gluey.dev/gluey/dsl"
-	"gluey.dev/gluey/eval"
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/dsl"
+	"github.com/gobijan/gluey/eval"
+	"github.com/gobijan/gluey/expr"
 )
 
 func TestWebApp(t *testing.T) {
@@ -265,7 +265,7 @@ func TestNestedResource(t *testing.T) {
 	dsl.WebApp("testapp", func() {
 		dsl.Resource("posts", func() {
 			dsl.Actions("index", "show")
-			dsl.Resource("comments")  // Nested resource
+			dsl.Resource("comments") // Nested resource
 		})
 	})
 

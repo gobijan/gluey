@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/expr"
 )
 
 // InterfaceGenerator generates only interfaces and contracts.
@@ -20,8 +20,8 @@ type InterfaceGenerator struct {
 // NewInterfaceGenerator creates a new interface generator.
 func NewInterfaceGenerator(app *expr.AppExpr, outDir string) *InterfaceGenerator {
 	return &InterfaceGenerator{
-		app:    app,
-		outDir: outDir,
+		app:     app,
+		outDir:  outDir,
 		version: "0.1.0", // Default version
 		command: "gluey gen design",
 	}
@@ -45,28 +45,28 @@ func (g *InterfaceGenerator) Generate() error {
 		filepath.Join(g.outDir, "types"),
 		filepath.Join(g.outDir, "http"),
 	}
-	
+
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}
-	
+
 	// Generate controller interfaces
 	if err := g.generateControllerInterfaces(); err != nil {
 		return fmt.Errorf("failed to generate controller interfaces: %w", err)
 	}
-	
+
 	// Generate types (forms and models)
 	if err := g.generateTypes(); err != nil {
 		return fmt.Errorf("failed to generate types: %w", err)
 	}
-	
+
 	// Generate HTTP router
 	if err := g.generateRouter(); err != nil {
 		return fmt.Errorf("failed to generate router: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -75,23 +75,23 @@ func (g *InterfaceGenerator) generateControllerInterfaces() error {
 	// Generate a controller interface for each resource
 	for _, resource := range g.app.Resources {
 		content := g.generateResourceInterface(resource)
-		
-		filename := filepath.Join(g.outDir, "interfaces", resource.Name + "_controller.go")
+
+		filename := filepath.Join(g.outDir, "interfaces", resource.Name+"_controller.go")
 		if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
 			return err
 		}
 	}
-	
+
 	// Generate pages controller if there are pages
 	if len(g.app.Pages) > 0 {
 		content := g.generatePagesInterface()
-		
+
 		filename := filepath.Join(g.outDir, "interfaces", "pages_controller.go")
 		if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -100,28 +100,28 @@ func (g *InterfaceGenerator) generateResourceInterface(resource *expr.ResourceEx
 	// Header MUST come first, before package declaration
 	description := fmt.Sprintf("%s controller interface", resource.Name)
 	code := GenerateHeader(description, g.version, g.command)
-	
+
 	code += "package interfaces\n\n"
 	code += "import \"net/http\"\n\n"
-	
+
 	controllerName := toTitle(resource.Name) + "Controller"
-	
+
 	code += fmt.Sprintf("// %s handles requests for %s resources.\n", controllerName, resource.Name)
 	code += fmt.Sprintf("type %s interface {\n", controllerName)
-	
+
 	// Generate method signatures for each action
 	for _, action := range resource.Actions {
 		comment := getActionComment(action, resource.Name)
 		code += fmt.Sprintf("\t// %s\n", comment)
 		code += fmt.Sprintf("\t%s(w http.ResponseWriter, r *http.Request)\n", toTitle(action))
-		
+
 		if action != resource.Actions[len(resource.Actions)-1] {
 			code += "\n"
 		}
 	}
-	
+
 	code += "}\n"
-	
+
 	return code
 }
 
@@ -130,31 +130,31 @@ func (g *InterfaceGenerator) generatePagesInterface() string {
 	// Header MUST come first, before package declaration
 	description := "pages controller interface"
 	code := GenerateHeader(description, g.version, g.command)
-	
+
 	code += "package interfaces\n\n"
 	code += "import \"net/http\"\n\n"
 	code += "// PagesController handles static page requests.\n"
 	code += "type PagesController interface {\n"
-	
+
 	for i, page := range g.app.Pages {
 		for j, route := range page.Routes {
 			methodName := toTitle(page.Name)
 			if route.Method != "GET" {
 				methodName += toTitle(route.Method)
 			}
-			
+
 			comment := fmt.Sprintf("%s handles %s %s", methodName, route.Method, route.Path)
 			code += fmt.Sprintf("\t// %s\n", comment)
 			code += fmt.Sprintf("\t%s(w http.ResponseWriter, r *http.Request)\n", methodName)
-			
+
 			if i < len(g.app.Pages)-1 || j < len(page.Routes)-1 {
 				code += "\n"
 			}
 		}
 	}
-	
+
 	code += "}\n"
-	
+
 	return code
 }
 
@@ -167,10 +167,10 @@ func (g *InterfaceGenerator) generateTypes() error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Change package name to "types"
 	content = "package types\n" + content[len("package "+g.app.Name+"\n"):]
-	
+
 	filename := filepath.Join(g.outDir, "types", "forms.go")
 	return os.WriteFile(filename, []byte(content), 0644)
 }
@@ -178,7 +178,7 @@ func (g *InterfaceGenerator) generateTypes() error {
 // generateRouter generates the HTTP router.
 func (g *InterfaceGenerator) generateRouter() error {
 	content := g.generateRouterContent()
-	
+
 	filename := filepath.Join(g.outDir, "http", "router.go")
 	return os.WriteFile(filename, []byte(content), 0644)
 }
@@ -188,38 +188,38 @@ func (g *InterfaceGenerator) generateRouterContent() string {
 	// Header MUST come first, before package declaration
 	description := "HTTP router setup"
 	code := GenerateHeader(description, g.version, g.command)
-	
+
 	code += "package http\n\n"
 	code += "import (\n"
 	code += "\t\"net/http\"\n"
 	code += fmt.Sprintf("\t\"%s/gen/interfaces\"\n", g.app.Name)
 	code += ")\n\n"
-	
+
 	// Generate Controllers struct
 	code += "// Controllers holds all controller implementations.\n"
 	code += "type Controllers struct {\n"
-	
+
 	for _, resource := range g.app.Resources {
 		controllerName := toTitle(resource.Name) + "Controller"
 		code += fmt.Sprintf("\t%s interfaces.%s\n", toTitle(resource.Name), controllerName)
 	}
-	
+
 	if len(g.app.Pages) > 0 {
 		code += "\tPages interfaces.PagesController\n"
 	}
-	
+
 	code += "}\n\n"
-	
+
 	// Generate MountRoutes function
 	code += "// MountRoutes mounts all routes on the given mux.\n"
 	code += "func MountRoutes(mux *http.ServeMux, c Controllers) {\n"
-	
+
 	// Register routes in proper order to avoid conflicts
 	// More specific routes first
 	for _, resource := range g.app.Resources {
 		g.addResourceRoutes(&code, resource)
 	}
-	
+
 	// Page routes (non-root first)
 	for _, page := range g.app.Pages {
 		hasRootRoute := false
@@ -233,12 +233,12 @@ func (g *InterfaceGenerator) generateRouterContent() string {
 			g.addPageRoute(&code, page)
 		}
 	}
-	
+
 	// Static files
 	code += "\t// Static files\n"
 	code += "\tmux.Handle(\"GET /static/\", http.StripPrefix(\"/static/\", http.FileServer(http.Dir(\"public\"))))\n"
 	code += "\n"
-	
+
 	// Root route last
 	for _, page := range g.app.Pages {
 		for _, route := range page.Routes {
@@ -248,9 +248,9 @@ func (g *InterfaceGenerator) generateRouterContent() string {
 			}
 		}
 	}
-	
+
 	code += "}\n"
-	
+
 	return code
 }
 
@@ -258,9 +258,9 @@ func (g *InterfaceGenerator) generateRouterContent() string {
 func (g *InterfaceGenerator) addResourceRoutes(code *string, resource *expr.ResourceExpr) {
 	controllerVar := "c." + toTitle(resource.Name)
 	basePath := "/" + resource.Name
-	
+
 	*code += fmt.Sprintf("\t// %s routes\n", toTitle(resource.Name))
-	
+
 	// Order matters for Go 1.22+ routing
 	// More specific paths first
 	*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s/new\", %s.New)\n", basePath, controllerVar)
@@ -280,8 +280,8 @@ func (g *InterfaceGenerator) addPageRoute(code *string, page *expr.PageExpr) {
 		if route.Method != "GET" {
 			methodName += toTitle(route.Method)
 		}
-		
-		*code += fmt.Sprintf("\tmux.HandleFunc(\"%s %s\", c.Pages.%s)\n", 
+
+		*code += fmt.Sprintf("\tmux.HandleFunc(\"%s %s\", c.Pages.%s)\n",
 			route.Method, route.Path, methodName)
 	}
 }

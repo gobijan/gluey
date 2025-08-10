@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/expr"
 )
 
 // TypesGenerator generates form types.
@@ -37,21 +37,21 @@ func (g *TypesGenerator) SetCommand(command string) {
 // Generate generates all form types.
 func (g *TypesGenerator) Generate() (string, error) {
 	var buf bytes.Buffer
-	
+
 	// Header MUST come first, before package declaration
 	description := "form types and validation"
 	buf.WriteString(GenerateHeader(description, g.version, g.command))
-	
+
 	// Write package header
 	buf.WriteString("package types\n\n")
-	
+
 	// Add imports if needed
 	if len(g.app.Forms) > 0 {
 		buf.WriteString("import (\n")
-		buf.WriteString("\t\"gluey.dev/gluey/runtime\"\n")
+		buf.WriteString("\t\"github.com/gobijan/gluey/runtime\"\n")
 		buf.WriteString(")\n\n")
 	}
-	
+
 	// Generate each form type
 	for _, form := range g.app.Forms {
 		code, err := g.generateForm(form)
@@ -61,7 +61,7 @@ func (g *TypesGenerator) Generate() (string, error) {
 		buf.WriteString(code)
 		buf.WriteString("\n")
 	}
-	
+
 	// Generate form types based on resource conventions
 	for _, resource := range g.app.Resources {
 		// Check if custom forms are defined
@@ -72,7 +72,7 @@ func (g *TypesGenerator) Generate() (string, error) {
 			buf.WriteString(code)
 			buf.WriteString("\n")
 		}
-		
+
 		editFormName := resource.EditFormName()
 		if g.app.Form(editFormName) == nil {
 			// Generate default edit form
@@ -81,43 +81,43 @@ func (g *TypesGenerator) Generate() (string, error) {
 			buf.WriteString("\n")
 		}
 	}
-	
+
 	return buf.String(), nil
 }
 
 // generateForm generates a single form type.
 func (g *TypesGenerator) generateForm(form *expr.FormExpr) (string, error) {
 	var buf bytes.Buffer
-	
+
 	// Generate struct
 	buf.WriteString(fmt.Sprintf("// %s represents form data.\n", form.Name))
 	buf.WriteString(fmt.Sprintf("type %s struct {\n", form.Name))
-	
+
 	for _, attr := range form.Attributes {
 		fieldCode := g.generateField(attr)
 		buf.WriteString(fieldCode)
 	}
-	
+
 	buf.WriteString("}\n\n")
-	
+
 	// Generate Validate method
 	buf.WriteString(fmt.Sprintf("// Validate validates %s.\n", form.Name))
 	buf.WriteString(fmt.Sprintf("func (f *%s) Validate() error {\n", form.Name))
 	buf.WriteString("\tv := runtime.NewValidator()\n\n")
-	
+
 	for _, attr := range form.Attributes {
 		validationCode := g.generateValidation(attr)
 		if validationCode != "" {
 			buf.WriteString(validationCode)
 		}
 	}
-	
+
 	buf.WriteString("\n\tif !v.Valid() {\n")
 	buf.WriteString("\t\treturn v.Errors()\n")
 	buf.WriteString("\t}\n")
 	buf.WriteString("\treturn nil\n")
 	buf.WriteString("}\n")
-	
+
 	return buf.String(), nil
 }
 
@@ -126,38 +126,38 @@ func (g *TypesGenerator) generateField(attr *expr.AttributeExpr) string {
 	fieldName := g.toGoName(attr.Name)
 	fieldType := g.goType(attr.Type)
 	tags := g.generateTags(attr)
-	
+
 	return fmt.Sprintf("\t%s %s %s\n", fieldName, fieldType, tags)
 }
 
 // generateTags generates struct tags for a field.
 func (g *TypesGenerator) generateTags(attr *expr.AttributeExpr) string {
 	var tags []string
-	
+
 	// Form tag
 	tags = append(tags, fmt.Sprintf(`form:"%s"`, attr.Name))
-	
+
 	// JSON tag
 	jsonTag := attr.Name
 	if !attr.IsRequired() {
 		jsonTag += ",omitempty"
 	}
 	tags = append(tags, fmt.Sprintf(`json:"%s"`, jsonTag))
-	
+
 	// Validation tags
 	var validations []string
 	if attr.IsRequired() {
 		validations = append(validations, "required")
 	}
-	
+
 	if max, ok := attr.MaxLength(); ok {
 		validations = append(validations, fmt.Sprintf("max=%d", max))
 	}
-	
+
 	if min, ok := attr.MinLength(); ok {
 		validations = append(validations, fmt.Sprintf("min=%d", min))
 	}
-	
+
 	if format, ok := attr.Format(); ok {
 		switch format {
 		case expr.FormatEmail:
@@ -166,11 +166,11 @@ func (g *TypesGenerator) generateTags(attr *expr.AttributeExpr) string {
 			validations = append(validations, "url")
 		}
 	}
-	
+
 	if len(validations) > 0 {
 		tags = append(tags, fmt.Sprintf(`validate:"%s"`, strings.Join(validations, ",")))
 	}
-	
+
 	return fmt.Sprintf("`%s`", strings.Join(tags, " "))
 }
 
@@ -178,11 +178,11 @@ func (g *TypesGenerator) generateTags(attr *expr.AttributeExpr) string {
 func (g *TypesGenerator) generateValidation(attr *expr.AttributeExpr) string {
 	var buf bytes.Buffer
 	fieldName := g.toGoName(attr.Name)
-	
+
 	if attr.IsRequired() {
 		buf.WriteString(fmt.Sprintf("\tv.Required(\"%s\", f.%s)\n", attr.Name, fieldName))
 	}
-	
+
 	if format, ok := attr.Format(); ok {
 		switch format {
 		case expr.FormatEmail:
@@ -191,15 +191,15 @@ func (g *TypesGenerator) generateValidation(attr *expr.AttributeExpr) string {
 			buf.WriteString(fmt.Sprintf("\tv.URL(\"%s\", f.%s)\n", attr.Name, fieldName))
 		}
 	}
-	
+
 	if min, ok := attr.MinLength(); ok {
 		buf.WriteString(fmt.Sprintf("\tv.MinLength(\"%s\", f.%s, %d)\n", attr.Name, fieldName, min))
 	}
-	
+
 	if max, ok := attr.MaxLength(); ok {
 		buf.WriteString(fmt.Sprintf("\tv.MaxLength(\"%s\", f.%s, %d)\n", attr.Name, fieldName, max))
 	}
-	
+
 	return buf.String()
 }
 
@@ -244,7 +244,7 @@ func (g *TypesGenerator) goType(dataType expr.DataType) string {
 	if dataType == nil {
 		return "string"
 	}
-	
+
 	switch dataType {
 	case expr.Boolean:
 		return "bool"
@@ -263,20 +263,20 @@ func (g *TypesGenerator) goType(dataType expr.DataType) string {
 	case expr.Bytes:
 		return "[]byte"
 	}
-	
+
 	// Handle array types
 	if arrayType, ok := dataType.(*expr.ArrayType); ok {
 		elemType := g.goType(arrayType.ElemType)
 		return "[]" + elemType
 	}
-	
+
 	// Handle map types
 	if mapType, ok := dataType.(*expr.MapType); ok {
 		keyType := g.goType(mapType.KeyType)
 		valueType := g.goType(mapType.ElemType)
 		return fmt.Sprintf("map[%s]%s", keyType, valueType)
 	}
-	
+
 	return "any"
 }
 

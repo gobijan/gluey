@@ -65,7 +65,7 @@ func (a *AttributeExpr) Prepare() {
 	if a.Type == nil {
 		a.Type = String
 	}
-	
+
 	// Initialize meta if needed
 	if a.Meta == nil {
 		a.Meta = make(map[string]interface{})
@@ -77,11 +77,11 @@ func (a *AttributeExpr) Validate() error {
 	if a.Name == "" {
 		return &ValidationError{Message: "attribute name cannot be empty"}
 	}
-	
+
 	if a.Type == nil {
 		return &ValidationError{Message: "attribute type cannot be nil"}
 	}
-	
+
 	return nil
 }
 

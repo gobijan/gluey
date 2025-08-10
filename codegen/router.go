@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/expr"
 )
 
 // RouterGenerator generates the router setup.
@@ -37,64 +37,64 @@ func (g *RouterGenerator) SetCommand(command string) {
 // Generate generates the router setup code.
 func (g *RouterGenerator) Generate() (string, error) {
 	var buf bytes.Buffer
-	
+
 	// Header MUST come first, before package declaration
 	description := "HTTP router setup"
 	buf.WriteString(GenerateHeader(description, g.version, g.command))
-	
+
 	buf.WriteString(fmt.Sprintf("package %s\n\n", g.app.Name))
 	buf.WriteString("import (\n")
 	buf.WriteString("\t\"net/http\"\n")
 	buf.WriteString(fmt.Sprintf("\t\"%s/app/controllers\"\n", g.app.Name))
 	buf.WriteString(")\n\n")
-	
+
 	// Generate Controllers interface
 	buf.WriteString("// Controllers holds all controller implementations.\n")
 	buf.WriteString("type Controllers struct {\n")
-	
+
 	for _, resource := range g.app.Resources {
 		controllerName := g.toControllerName(resource.Name)
-		buf.WriteString(fmt.Sprintf("\t%s controllers.%s\n", 
+		buf.WriteString(fmt.Sprintf("\t%s controllers.%s\n",
 			strings.Title(resource.Name), controllerName))
 	}
-	
+
 	if len(g.app.Pages) > 0 {
 		buf.WriteString("\tPages controllers.PagesController\n")
 	}
-	
+
 	buf.WriteString("}\n\n")
-	
+
 	// Generate MountRoutes function
 	buf.WriteString("// MountRoutes mounts all routes on the given mux.\n")
 	buf.WriteString("func MountRoutes(mux *http.ServeMux, c Controllers) {\n")
-	
+
 	// Add middleware comment
 	if len(g.app.Middleware) > 0 {
 		buf.WriteString("\t// TODO: Apply middleware stack: ")
 		buf.WriteString(strings.Join(g.app.Middleware, ", "))
 		buf.WriteString("\n\n")
 	}
-	
+
 	// Mount resource routes
 	for _, resource := range g.app.Resources {
 		g.generateResourceRoutes(&buf, resource)
 		buf.WriteString("\n")
 	}
-	
+
 	// Mount page routes
 	for _, page := range g.app.Pages {
 		g.generatePageRoutes(&buf, page)
 	}
-	
+
 	// Mount static files
 	if g.app.AssetsPath != "" {
 		buf.WriteString("\t// Static files\n")
 		buf.WriteString(fmt.Sprintf("\tmux.Handle(\"%s/\", http.StripPrefix(\"%s/\", http.FileServer(http.Dir(\"public\"))))\n",
 			g.app.AssetsPath, g.app.AssetsPath))
 	}
-	
+
 	buf.WriteString("}\n")
-	
+
 	return buf.String(), nil
 }
 
@@ -102,23 +102,23 @@ func (g *RouterGenerator) Generate() (string, error) {
 func (g *RouterGenerator) generateResourceRoutes(buf *bytes.Buffer, resource *expr.ResourceExpr) {
 	controllerVar := "c." + strings.Title(resource.Name)
 	basePath := "/" + resource.Name
-	
+
 	// Handle nested resources
 	if resource.Parent != nil {
 		basePath = "/" + resource.Parent.Name + "/{" + g.toSingular(resource.Parent.Name) + "_id}/" + resource.Name
 	}
-	
+
 	buf.WriteString(fmt.Sprintf("\t// %s routes\n", strings.Title(resource.Name)))
-	
+
 	for _, action := range resource.Actions {
 		method, path := g.getRouteForAction(action, basePath, resource.Name)
 		handler := fmt.Sprintf("%s.%s", controllerVar, strings.Title(action))
-		
+
 		// Add auth comment if required
 		if auths, ok := resource.AuthRequirements[action]; ok && len(auths) > 0 {
 			buf.WriteString(fmt.Sprintf("\t// Requires: %s\n", strings.Join(auths, ", ")))
 		}
-		
+
 		buf.WriteString(fmt.Sprintf("\tmux.HandleFunc(\"%s %s\", %s)\n", method, path, handler))
 	}
 }
@@ -128,12 +128,12 @@ func (g *RouterGenerator) generatePageRoutes(buf *bytes.Buffer, page *expr.PageE
 	for _, route := range page.Routes {
 		methodName := g.toPageMethodName(page.Name, route.Method)
 		handler := fmt.Sprintf("c.Pages.%s", methodName)
-		
+
 		// Add auth comment if required
 		if len(page.AuthRequirements) > 0 {
 			buf.WriteString(fmt.Sprintf("\t// Requires: %s\n", strings.Join(page.AuthRequirements, ", ")))
 		}
-		
+
 		buf.WriteString(fmt.Sprintf("\tmux.HandleFunc(\"%s %s\", %s)\n", route.Method, route.Path, handler))
 	}
 }

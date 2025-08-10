@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/expr"
 )
 
 // ViewsGenerator generates HTML templates.
@@ -111,30 +111,30 @@ func (g *ViewsGenerator) GenerateFlash() string {
 // GenerateResourceViews generates all views for a resource.
 func (g *ViewsGenerator) GenerateResourceViews(resource *expr.ResourceExpr) (map[string]string, error) {
 	views := make(map[string]string)
-	
+
 	if resource.HasAction("index") {
 		views["index.html"] = g.generateIndexView(resource)
 	}
-	
+
 	if resource.HasAction("show") {
 		views["show.html"] = g.generateShowView(resource)
 	}
-	
+
 	if resource.HasAction("new") {
 		views["new.html"] = g.generateNewView(resource)
 	}
-	
+
 	if resource.HasAction("edit") {
 		views["edit.html"] = g.generateEditView(resource)
 	}
-	
+
 	return views, nil
 }
 
 // generateIndexView generates the index view for a resource.
 func (g *ViewsGenerator) generateIndexView(resource *expr.ResourceExpr) string {
 	singular := g.toSingular(resource.Name)
-	
+
 	return fmt.Sprintf(`{{define "content"}}
 <div class="%s-index">
     <h1>%s</h1>
@@ -189,7 +189,7 @@ func (g *ViewsGenerator) generateIndexView(resource *expr.ResourceExpr) string {
 // generateShowView generates the show view for a resource.
 func (g *ViewsGenerator) generateShowView(resource *expr.ResourceExpr) string {
 	singular := g.toSingular(resource.Name)
-	
+
 	return fmt.Sprintf(`{{define "content"}}
 <div class="%s-show">
     <h1>%s Details</h1>
@@ -232,7 +232,7 @@ func (g *ViewsGenerator) generateShowView(resource *expr.ResourceExpr) string {
 func (g *ViewsGenerator) generateNewView(resource *expr.ResourceExpr) string {
 	singular := g.toSingular(resource.Name)
 	formName := resource.NewFormName()
-	
+
 	return fmt.Sprintf(`{{define "content"}}
 <div class="%s-new">
     <h1>New %s</h1>
@@ -267,7 +267,7 @@ func (g *ViewsGenerator) generateNewView(resource *expr.ResourceExpr) string {
 func (g *ViewsGenerator) generateEditView(resource *expr.ResourceExpr) string {
 	singular := g.toSingular(resource.Name)
 	formName := resource.EditFormName()
-	
+
 	return fmt.Sprintf(`{{define "content"}}
 <div class="%s-edit">
     <h1>Edit %s</h1>

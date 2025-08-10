@@ -3,7 +3,7 @@ package expr_test
 import (
 	"testing"
 
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/expr"
 )
 
 func TestAppExpr(t *testing.T) {

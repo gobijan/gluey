@@ -64,7 +64,7 @@ func (v *Validator) Email(field, value string) *Validator {
 	if value == "" {
 		return v
 	}
-	
+
 	_, err := mail.ParseAddress(value)
 	if err != nil {
 		v.errors = append(v.errors, ValidationError{
@@ -80,7 +80,7 @@ func (v *Validator) URL(field, value string) *Validator {
 	if value == "" {
 		return v
 	}
-	
+
 	u, err := url.Parse(value)
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		v.errors = append(v.errors, ValidationError{
@@ -118,7 +118,7 @@ func (v *Validator) Pattern(field, value, pattern string) *Validator {
 	if value == "" {
 		return v
 	}
-	
+
 	matched, err := regexp.MatchString(pattern, value)
 	if err != nil || !matched {
 		v.errors = append(v.errors, ValidationError{

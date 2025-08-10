@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/expr"
 )
 
 // Generator is the main code generator.
@@ -100,13 +100,13 @@ func (g *Generator) generateTypes() error {
 // generateControllers generates controller interfaces.
 func (g *Generator) generateControllers() error {
 	gen := NewControllersGenerator(g.app)
-	
+
 	// Generate base controller
 	baseCode, err := gen.GenerateBase()
 	if err != nil {
 		return err
 	}
-	
+
 	baseFile := filepath.Join(g.outputPath, g.app.Name, "controllers", "base.go")
 	if err := os.WriteFile(baseFile, []byte(baseCode), 0644); err != nil {
 		return err
@@ -118,7 +118,7 @@ func (g *Generator) generateControllers() error {
 		if err != nil {
 			return err
 		}
-		
+
 		file := filepath.Join(g.outputPath, g.app.Name, "controllers", resource.Name+".go")
 		if err := os.WriteFile(file, []byte(code), 0644); err != nil {
 			return err
@@ -131,7 +131,7 @@ func (g *Generator) generateControllers() error {
 		if err != nil {
 			return err
 		}
-		
+
 		pagesFile := filepath.Join(g.outputPath, g.app.Name, "controllers", "pages.go")
 		if err := os.WriteFile(pagesFile, []byte(pagesCode), 0644); err != nil {
 			return err
@@ -156,13 +156,13 @@ func (g *Generator) generateRouter() error {
 // generateViews generates HTML templates.
 func (g *Generator) generateViews() error {
 	gen := NewViewsGenerator(g.app)
-	
+
 	// Generate layout
 	layoutCode, err := gen.GenerateLayout()
 	if err != nil {
 		return err
 	}
-	
+
 	layoutFile := filepath.Join(g.outputPath, g.app.Name, "views", "layouts", "application.html")
 	if err := os.WriteFile(layoutFile, []byte(layoutCode), 0644); err != nil {
 		return err
@@ -173,7 +173,7 @@ func (g *Generator) generateViews() error {
 		"_errors.html": gen.GenerateErrors(),
 		"_flash.html":  gen.GenerateFlash(),
 	}
-	
+
 	for name, content := range sharedFiles {
 		file := filepath.Join(g.outputPath, g.app.Name, "views", "shared", name)
 		if err := os.WriteFile(file, []byte(content), 0644); err != nil {
@@ -187,7 +187,7 @@ func (g *Generator) generateViews() error {
 		if err != nil {
 			return err
 		}
-		
+
 		for name, content := range views {
 			file := filepath.Join(g.outputPath, g.app.Name, "views", resource.Name, name)
 			if err := os.WriteFile(file, []byte(content), 0644); err != nil {

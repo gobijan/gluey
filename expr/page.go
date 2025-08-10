@@ -50,17 +50,17 @@ func (p *PageExpr) Validate() error {
 	if p.Name == "" {
 		return &ValidationError{Message: "page name cannot be empty"}
 	}
-	
+
 	if len(p.Routes) == 0 {
 		return &ValidationError{Message: "page must have at least one route"}
 	}
-	
+
 	// Validate HTTP methods
 	validMethods := map[string]bool{
 		"GET": true, "POST": true, "PUT": true, "PATCH": true,
 		"DELETE": true, "HEAD": true, "OPTIONS": true,
 	}
-	
+
 	for _, route := range p.Routes {
 		if !validMethods[route.Method] {
 			return &ValidationError{
@@ -73,6 +73,6 @@ func (p *PageExpr) Validate() error {
 			}
 		}
 	}
-	
+
 	return nil
 }

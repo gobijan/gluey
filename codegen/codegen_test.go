@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"gluey.dev/gluey/codegen"
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/codegen"
+	"github.com/gobijan/gluey/expr"
 )
 
 func TestInterfaceGenerator(t *testing.T) {
@@ -300,6 +300,6 @@ func TestViewsGenerator(t *testing.T) {
 		t.Error("Index view should have posts-index class")
 	}
 	if !strings.Contains(indexView, "{{range .Posts}}") {
-		t.Error("Index view should iterate over posts")  
+		t.Error("Index view should iterate over posts")
 	}
 }

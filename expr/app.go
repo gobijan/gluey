@@ -1,7 +1,7 @@
 package expr
 
 import (
-	"gluey.dev/gluey/eval"
+	"github.com/gobijan/gluey/eval"
 )
 
 // AppExpr represents a web application.
@@ -58,7 +58,7 @@ func (a *AppExpr) WalkSets(walker eval.SetWalker) {
 
 // Packages returns the import paths.
 func (a *AppExpr) Packages() []string {
-	return []string{"gluey.dev/gluey/dsl"}
+	return []string{"github.com/gobijan/gluey/dsl"}
 }
 
 // Prepare prepares the application expression.
@@ -67,7 +67,7 @@ func (a *AppExpr) Prepare() {
 	if a.DefaultLayout == "" && len(a.Layouts) > 0 {
 		a.DefaultLayout = "application"
 	}
-	
+
 	// Set default assets path
 	if a.AssetsPath == "" {
 		a.AssetsPath = "/static"

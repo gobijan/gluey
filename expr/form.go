@@ -33,14 +33,14 @@ func (f *FormExpr) Validate() error {
 	if f.Name == "" {
 		return &ValidationError{Message: "form name cannot be empty"}
 	}
-	
+
 	// Validate attributes
 	for _, attr := range f.Attributes {
 		if err := attr.Validate(); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 

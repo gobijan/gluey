@@ -1,8 +1,8 @@
 package dsl
 
 import (
-	"gluey.dev/gluey/eval"
-	"gluey.dev/gluey/expr"
+	"github.com/gobijan/gluey/eval"
+	"github.com/gobijan/gluey/expr"
 )
 
 // Primitive type constants

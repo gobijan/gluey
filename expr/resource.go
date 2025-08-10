@@ -40,7 +40,7 @@ func (r *ResourceExpr) Prepare() {
 	if len(r.Actions) == 0 {
 		r.Actions = []string{"index", "show", "new", "create", "edit", "update", "destroy"}
 	}
-	
+
 	// Initialize maps if needed
 	if r.AuthRequirements == nil {
 		r.AuthRequirements = make(map[string][]string)
@@ -64,13 +64,13 @@ func (r *ResourceExpr) Validate() error {
 	if r.Name == "" {
 		return &ValidationError{Message: "resource name cannot be empty"}
 	}
-	
+
 	// Validate action names
 	validActions := map[string]bool{
 		"index": true, "show": true, "new": true, "create": true,
 		"edit": true, "update": true, "destroy": true,
 	}
-	
+
 	for _, action := range r.Actions {
 		if !validActions[action] {
 			return &ValidationError{
@@ -78,7 +78,7 @@ func (r *ResourceExpr) Validate() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
