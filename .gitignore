@@ -40,3 +40,8 @@ example_app/
 /gluey
 build/
 dist/
+
+# Generated files in examples
+examples/*/gen/
+examples/*/app/
+examples/*/main.go

@@ -14,16 +14,18 @@ A minimal todo list application showcasing Gluey's simplicity.
 
 ```bash
 # From the examples/todo directory
-go mod init todo
-go mod edit -replace gluey.dev/gluey=../../
 
-# Generate the application
+# 1. Generate the interfaces and types
 gluey gen design
+
+# 2. Generate the example implementation (optional)
 gluey example design
 
-# Run
+# 3. Run the application
 go run main.go
 ```
+
+**Note:** The generated code (`gen/` and `app/` folders) is not committed to the repository. You must run the generation commands above to create the application.
 
 Visit http://localhost:8000
 

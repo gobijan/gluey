@@ -16,18 +16,22 @@ A complete blog application demonstrating Gluey's features.
 
 ```bash
 # From the examples/blog directory
-go mod init blog
-go mod edit -replace gluey.dev/gluey=../../
 
-# Generate interfaces and types
+# 1. Initialize the module (if not already done)
+go mod init blog
+go mod edit -replace gluey.dev/gluey=../..
+
+# 2. Generate interfaces and types
 gluey gen design
 
-# Generate example implementations
+# 3. Generate example implementations
 gluey example design
 
-# Run the application
+# 4. Run the application
 go run main.go
 ```
+
+**Note:** The generated code (`gen/` and `app/` folders) is not committed to the repository. You must run the generation commands above to create the application.
 
 Visit http://localhost:8000
 
