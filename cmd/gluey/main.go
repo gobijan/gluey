@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-const version = "0.1.0"
+const Version = "0.1.0"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -29,7 +29,7 @@ func main() {
 		}
 		runNew(os.Args[2])
 	case "version", "-v", "--version":
-		fmt.Printf("gluey version %s\n", version)
+		fmt.Printf("gluey version %s\n", Version)
 	case "help", "-h", "--help":
 		printUsage()
 	default:
@@ -138,7 +138,7 @@ var _ = WebApp("%s", func() {
 go 1.21
 
 require gluey.dev/gluey v%s
-`, projectName, version)
+`, projectName, Version)
 
 	goModFile := filepath.Join(projectName, "go.mod")
 	if err := os.WriteFile(goModFile, []byte(goModContent), 0644); err != nil {

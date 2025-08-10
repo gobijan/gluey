@@ -10,6 +10,8 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
+const glueyVersion = "0.1.0"
+
 // runGenerateImpl executes the interface generation.
 func runGenerateImpl() error {
 	fmt.Println("🔨 Generating interfaces and contracts from DSL...")
@@ -79,6 +81,8 @@ func main() {
 	
 	// Generate interfaces only
 	gen := codegen.NewInterfaceGenerator(expr.Root, filepath.Join(outDir, "gen"))
+	gen.SetVersion(os.Getenv("GLUEY_VERSION"))
+	gen.SetCommand(os.Getenv("GLUEY_COMMAND"))
 	if err := gen.Generate(); err != nil {
 		log.Fatal("Interface generation failed:", err)
 	}
@@ -126,7 +130,11 @@ replace gluey.dev/gluey => %s
 	// Run the generator
 	cmd := exec.Command("go", "run", mainFile)
 	cmd.Dir = tmpDir // Run in the temp directory
-	cmd.Env = append(os.Environ(), "GLUEY_OUTPUT="+cwd) // Pass output directory
+	// Pass environment variables
+	cmd.Env = append(os.Environ(), 
+		"GLUEY_OUTPUT="+cwd,
+		"GLUEY_VERSION="+glueyVersion,
+		"GLUEY_COMMAND=gluey gen "+strings.Join(os.Args[2:], " "))
 	
 	output, err := cmd.CombinedOutput()
 	if err != nil {

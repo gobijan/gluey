@@ -129,7 +129,11 @@ replace gluey.dev/gluey => %s
 	// Run the generator
 	cmd := exec.Command("go", "run", mainFile)
 	cmd.Dir = tmpDir // Run in the temp directory
-	cmd.Env = append(os.Environ(), "GLUEY_OUTPUT="+cwd) // Pass output directory
+	// Pass environment variables
+	cmd.Env = append(os.Environ(), 
+		"GLUEY_OUTPUT="+cwd,
+		"GLUEY_VERSION="+glueyVersion,
+		"GLUEY_COMMAND=gluey example "+strings.Join(os.Args[2:], " "))
 	
 	output, err := cmd.CombinedOutput()
 	if err != nil {
