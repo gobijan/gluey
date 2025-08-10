@@ -1,0 +1,118 @@
+# .goreleaser.yml
+# GoReleaser configuration for Gluey
+# https://goreleaser.com
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: gluey
+    main: ./cmd/gluey
+    binary: gluey
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "7"
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    mod_timestamp: '{{ .CommitTimestamp }}'
+
+archives:
+  - id: gluey-archive
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+      - docs/*
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: 'Features'
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: 'Enhancements'
+      regexp: "^.*refactor[(\\w)]*:+.*$"
+      order: 2
+
+release:
+  github:
+    owner: gobijan
+    name: gluey
+  prerelease: auto
+  name_template: "{{.ProjectName}}-v{{.Version}}"
+  
+brews:
+  - name: gluey
+    tap:
+      owner: gobijan
+      name: homebrew-tap
+    folder: Formula
+    homepage: "https://github.com/gobijan/gluey"
+    description: "Rails-like web framework for Go with DSL-based code generation"
+    license: "MIT"
+    test: |
+      system "#{bin}/gluey", "version"
+    install: |
+      bin.install "gluey"
+
+dockers:
+  - image_templates:
+      - "ghcr.io/gobijan/gluey:{{ .Tag }}"
+      - "ghcr.io/gobijan/gluey:v{{ .Major }}"
+      - "ghcr.io/gobijan/gluey:v{{ .Major }}.{{ .Minor }}"
+      - "ghcr.io/gobijan/gluey:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+
+nfpms:
+  - id: packages
+    package_name: gluey
+    vendor: Gluey Framework
+    homepage: https://github.com/gobijan/gluey
+    maintainer: Bijan Rahnema
+    description: Rails-like web framework for Go with DSL-based code generation
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - apk
