@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
-	"go/build"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
-	"gluey.dev/gluey/eval"
-	"gluey.dev/gluey/expr"
+	"golang.org/x/mod/modfile"
 )
 
 // runGenerateImpl executes the interface generation.
@@ -22,15 +20,26 @@ func runGenerateImpl() error {
 		return fmt.Errorf("%s not found - make sure you're in a Gluey project directory", designFile)
 	}
 
-	// Get current directory name for module
+	// Read go.mod to get the module name
+	goModContent, err := os.ReadFile("go.mod")
+	if err != nil {
+		return fmt.Errorf("failed to read go.mod: %w", err)
+	}
+
+	modFile, err := modfile.Parse("go.mod", goModContent, nil)
+	if err != nil {
+		return fmt.Errorf("failed to parse go.mod: %w", err)
+	}
+	moduleName := modFile.Module.Mod.Path
+
+	// Get current directory
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
-	moduleName := filepath.Base(cwd)
 
 	// Create a temporary directory for the generator
-	tmpDir, err := ioutil.TempDir("", "gluey-gen-*")
+	tmpDir, err := os.MkdirTemp("", "gluey-gen-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
@@ -42,6 +51,8 @@ func runGenerateImpl() error {
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	
 	_ "%s/design"
 	"gluey.dev/gluey/codegen"
@@ -60,14 +71,20 @@ func main() {
 		log.Fatal("No WebApp found in design")
 	}
 	
+	// Get output directory from environment
+	outDir := os.Getenv("GLUEY_OUTPUT")
+	if outDir == "" {
+		outDir = "."
+	}
+	
 	// Generate interfaces only
-	gen := codegen.NewInterfaceGenerator(expr.Root, "gen")
+	gen := codegen.NewInterfaceGenerator(expr.Root, filepath.Join(outDir, "gen"))
 	if err := gen.Generate(); err != nil {
 		log.Fatal("Interface generation failed:", err)
 	}
 	
 	fmt.Println("✅ Interface generation complete!")
-	fmt.Println("\nGenerated files in gen/")
+	fmt.Println("\nGenerated files in", filepath.Join(outDir, "gen"))
 }
 `, moduleName)
 
@@ -76,81 +93,79 @@ func main() {
 		return fmt.Errorf("failed to write generator main.go: %w", err)
 	}
 
-	// Copy go.mod to temp directory
-	goModContent, err := os.ReadFile("go.mod")
-	if err != nil {
-		return fmt.Errorf("failed to read go.mod: %w", err)
-	}
+	// Create a go.mod for the temp directory
+	tmpGoModContent := fmt.Sprintf(`module gluey-generator
+
+go %s
+
+require (
+	%s v0.0.0
+	gluey.dev/gluey v0.0.0
+)
+
+replace %s => %s
+replace gluey.dev/gluey => %s
+`, 
+		strings.TrimPrefix(modFile.Go.Version, "go"),
+		moduleName,
+		moduleName, cwd,
+		getGlueyPath())
 	
 	tmpGoMod := filepath.Join(tmpDir, "go.mod")
-	if err := os.WriteFile(tmpGoMod, goModContent, 0644); err != nil {
+	if err := os.WriteFile(tmpGoMod, []byte(tmpGoModContent), 0644); err != nil {
 		return fmt.Errorf("failed to write temp go.mod: %w", err)
 	}
 
-	// Copy go.sum if it exists
-	if _, err := os.Stat("go.sum"); err == nil {
-		goSumContent, _ := os.ReadFile("go.sum")
-		tmpGoSum := filepath.Join(tmpDir, "go.sum")
-		os.WriteFile(tmpGoSum, goSumContent, 0644)
+	// Run go mod tidy in the temp directory to fetch dependencies
+	tidyCmd := exec.Command("go", "mod", "tidy")
+	tidyCmd.Dir = tmpDir
+	if output, err := tidyCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to run go mod tidy: %w\nOutput: %s", err, output)
 	}
 
 	// Run the generator
 	cmd := exec.Command("go", "run", mainFile)
-	cmd.Dir = cwd // Run in the project directory
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Dir = tmpDir // Run in the temp directory
+	cmd.Env = append(os.Environ(), "GLUEY_OUTPUT="+cwd) // Pass output directory
 	
-	if err := cmd.Run(); err != nil {
-		// Try alternative approach - run directly without temp file
-		return runGenerateDirect()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(string(output))
+		return fmt.Errorf("generation failed: %w", err)
+	}
+	if len(output) > 0 {
+		fmt.Println(string(output))
 	}
 
 	return nil
 }
 
-// runGenerateDirect runs generation directly in-process.
-func runGenerateDirect() error {
-	// Reset the expression root
-	expr.Reset()
-	eval.Context.Reset()
-
-	// Import and run the design package
-	designPkg, err := build.Import("./design", ".", 0)
-	if err != nil {
-		return fmt.Errorf("failed to import design package: %w", err)
-	}
-
-	// This is a simplified approach - in production, we'd need to properly
-	// compile and run the design package. For now, we'll provide instructions.
-	
-	fmt.Println("\n⚠️  Alternative generation method:")
-	fmt.Println("\nTo generate code, create a file called 'generate.go' with:")
-	fmt.Println("\n```go")
-	fmt.Printf(`// +build ignore
-
-package main
-
-import (
-	_ "%s/design"
-	"gluey.dev/gluey/codegen"
-	"gluey.dev/gluey/eval"
-	"gluey.dev/gluey/expr"
-	"log"
-)
-
-func main() {
-	if err := eval.RunDSL(); err != nil {
-		log.Fatal(err)
+// getGlueyPath returns the path to the Gluey module.
+func getGlueyPath() string {
+	// First, check if we're in the Gluey repo itself
+	if _, err := os.Stat(filepath.Join(".", "go.mod")); err == nil {
+		if content, err := os.ReadFile("go.mod"); err == nil {
+			if strings.Contains(string(content), "module gluey.dev/gluey") {
+				cwd, _ := os.Getwd()
+				return cwd
+			}
+		}
 	}
 	
-	gen := codegen.NewInterfaceGenerator(expr.Root, "gen")
-	if err := gen.Generate(); err != nil {
-		log.Fatal(err)
+	// Check parent directories (for examples)
+	for i := 1; i <= 3; i++ {
+		parentPath := strings.Repeat("../", i)
+		goModPath := filepath.Join(parentPath, "go.mod")
+		if _, err := os.Stat(goModPath); err == nil {
+			if content, err := os.ReadFile(goModPath); err == nil {
+				if strings.Contains(string(content), "module gluey.dev/gluey") {
+					abs, _ := filepath.Abs(parentPath)
+					return abs
+				}
+			}
+		}
 	}
-}
-`, filepath.Base(designPkg.Dir))
-	fmt.Println("```")
-	fmt.Println("\nThen run: go run generate.go")
 	
-	return fmt.Errorf("automatic generation not available - see instructions above")
+	// Default: assume it's available as a module
+	return ""
 }

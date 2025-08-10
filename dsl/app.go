@@ -1,6 +1,8 @@
 package dsl
 
 import (
+	"fmt"
+	
 	"gluey.dev/gluey/eval"
 	"gluey.dev/gluey/expr"
 )
@@ -49,6 +51,9 @@ func Description(desc string) {
 		// Resources can have descriptions too (for future use)
 	case *expr.PageExpr:
 		// Pages can have descriptions too (for future use)
+	case *expr.AttributeExpr:
+		// Handle attribute description
+		e.Description = desc
 	default:
 		eval.IncompatibleDSL()
 	}
@@ -185,13 +190,23 @@ func Layouts(fn func()) {
 //	Layouts(func() {
 //	    Default("application")
 //	})
-func Default(name string) {
-	app, ok := eval.Current().(*expr.AppExpr)
-	if !ok {
+func Default(value interface{}) {
+	switch e := eval.Current().(type) {
+	case *expr.AppExpr:
+		// Default layout
+		if name, ok := value.(string); ok {
+			e.DefaultLayout = name
+		}
+	case *expr.AttributeExpr:
+		// Default value for attribute - store in description for now
+		// TODO: Add proper Default field to AttributeExpr
+		if e.Description != "" {
+			e.Description += " "
+		}
+		e.Description += fmt.Sprintf("(default: %v)", value)
+	default:
 		eval.IncompatibleDSL()
-		return
 	}
-	app.DefaultLayout = name
 }
 
 // Layout defines a layout.

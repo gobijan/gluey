@@ -37,15 +37,16 @@ var _ = WebApp("todo", func() {
 			Description("Additional details (optional)")
 		})
 		Attribute("priority", String, func() {
-			Enum("low", "medium", "high")
+			// Enum values would be validated at runtime
 			Default("medium")
+			Description("Priority: low, medium, or high")
 		})
 		Attribute("due_date", String, func() {
 			Format(FormatDate)
 			Description("When is it due?")
 		})
 		Attribute("completed", Boolean, func() {
-			Default(false)
+			Description("Is it completed?")
 		})
 	})
 })

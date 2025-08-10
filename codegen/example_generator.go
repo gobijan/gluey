@@ -12,26 +12,30 @@ import (
 // ExampleGenerator generates example implementations.
 // This is used by the 'example' command and only creates files that don't exist.
 type ExampleGenerator struct {
-	app *expr.AppExpr
+	app       *expr.AppExpr
+	OutputDir string // Base output directory (defaults to ".")
 }
 
 // NewExampleGenerator creates a new example generator.
 func NewExampleGenerator(app *expr.AppExpr) *ExampleGenerator {
-	return &ExampleGenerator{app: app}
+	return &ExampleGenerator{
+		app:       app,
+		OutputDir: ".",
+	}
 }
 
 // Generate generates example implementations.
 func (g *ExampleGenerator) Generate() error {
 	// Create app directories if they don't exist
 	dirs := []string{
-		"app/controllers",
-		"app/views/layouts",
-		"app/views/shared",
+		filepath.Join(g.OutputDir, "app/controllers"),
+		filepath.Join(g.OutputDir, "app/views/layouts"),
+		filepath.Join(g.OutputDir, "app/views/shared"),
 	}
 	
 	// Add view directories for each resource
 	for _, resource := range g.app.Resources {
-		dirs = append(dirs, filepath.Join("app/views", resource.Name))
+		dirs = append(dirs, filepath.Join(g.OutputDir, "app/views", resource.Name))
 	}
 	
 	for _, dir := range dirs {
@@ -81,7 +85,7 @@ func fileExists(path string) bool {
 
 // generateBaseController generates the base controller if it doesn't exist.
 func (g *ExampleGenerator) generateBaseController() error {
-	filename := "app/controllers/base.go"
+	filename := filepath.Join(g.OutputDir, "app/controllers/base.go")
 	if fileExists(filename) {
 		fmt.Printf("  Skipping %s (already exists)\n", filename)
 		return nil
@@ -107,9 +111,9 @@ func NewBaseController() *BaseController {
 	
 	// Try to load all template files
 	patterns := []string{
-		"app/views/layouts/*.html",
-		"app/views/shared/*.html",
-		"app/views/*/*.html",
+		filepath.Join(g.OutputDir, "app/views/layouts/*.html"),
+		filepath.Join(g.OutputDir, "app/views/shared/*.html"),
+		filepath.Join(g.OutputDir, "app/views/*/*.html"),
 	}
 	
 	for _, pattern := range patterns {
@@ -167,7 +171,7 @@ func (c *BaseController) Flash(w http.ResponseWriter, typ, message string) {
 
 // generateResourceController generates an example controller for a resource.
 func (g *ExampleGenerator) generateResourceController(resource *expr.ResourceExpr) error {
-	filename := fmt.Sprintf("app/controllers/%s.go", resource.Name)
+	filename := filepath.Join(g.OutputDir, fmt.Sprintf("app/controllers/%s.go", resource.Name))
 	if fileExists(filename) {
 		fmt.Printf("  Skipping %s (already exists)\n", filename)
 		return nil
@@ -329,7 +333,7 @@ func (c *%s) Destroy(w http.ResponseWriter, r *http.Request) {
 
 // generatePagesController generates an example pages controller.
 func (g *ExampleGenerator) generatePagesController() error {
-	filename := "app/controllers/pages.go"
+	filename := filepath.Join(g.OutputDir, "app/controllers/pages.go")
 	if fileExists(filename) {
 		fmt.Printf("  Skipping %s (already exists)\n", filename)
 		return nil
@@ -402,7 +406,7 @@ func (g *ExampleGenerator) generateViews() error {
 
 // generateLayout generates the main layout template.
 func (g *ExampleGenerator) generateLayout() error {
-	filename := "app/views/layouts/application.html"
+	filename := filepath.Join(g.OutputDir, "app/views/layouts/application.html")
 	if fileExists(filename) {
 		fmt.Printf("  Skipping %s (already exists)\n", filename)
 		return nil
@@ -426,7 +430,7 @@ func (g *ExampleGenerator) generateSharedViews() error {
 	viewGen := NewViewsGenerator(g.app)
 	
 	// Generate errors partial
-	filename := "app/views/shared/_errors.html"
+	filename := filepath.Join(g.OutputDir, "app/views/shared/_errors.html")
 	if !fileExists(filename) {
 		content := viewGen.GenerateErrors()
 		fmt.Printf("  Creating %s\n", filename)
@@ -436,7 +440,7 @@ func (g *ExampleGenerator) generateSharedViews() error {
 	}
 	
 	// Generate flash partial
-	filename = "app/views/shared/_flash.html"
+	filename = filepath.Join(g.OutputDir, "app/views/shared/_flash.html")
 	if !fileExists(filename) {
 		content := viewGen.GenerateFlash()
 		fmt.Printf("  Creating %s\n", filename)
@@ -457,7 +461,7 @@ func (g *ExampleGenerator) generateResourceViews(resource *expr.ResourceExpr) er
 	}
 	
 	for name, content := range views {
-		filename := filepath.Join("app/views", resource.Name, name)
+		filename := filepath.Join(g.OutputDir, "app/views", resource.Name, name)
 		if fileExists(filename) {
 			fmt.Printf("  Skipping %s (already exists)\n", filename)
 			continue
