@@ -165,6 +165,70 @@ func (f *FormatValidation) Validate(value interface{}) error {
 	return nil
 }
 
+// PatternValidation validates a value against a regex pattern.
+type PatternValidation struct {
+	Pattern string
+}
+
+// Name returns the validation name.
+func (p *PatternValidation) Name() string {
+	return "pattern"
+}
+
+// Validate checks if the value matches the pattern.
+func (p *PatternValidation) Validate(value interface{}) error {
+	// TODO: Implement pattern validation
+	return nil
+}
+
+// EnumValidation validates a value is one of the allowed values.
+type EnumValidation struct {
+	Values []string
+}
+
+// Name returns the validation name.
+func (e *EnumValidation) Name() string {
+	return "enum"
+}
+
+// Validate checks if the value is in the allowed list.
+func (e *EnumValidation) Validate(value interface{}) error {
+	// TODO: Implement enum validation
+	return nil
+}
+
+// MinValidation validates a minimum numeric value.
+type MinValidation struct {
+	Min int
+}
+
+// Name returns the validation name.
+func (m *MinValidation) Name() string {
+	return "min"
+}
+
+// Validate checks if the value meets the minimum.
+func (m *MinValidation) Validate(value interface{}) error {
+	// TODO: Implement min validation
+	return nil
+}
+
+// MaxValidation validates a maximum numeric value.
+type MaxValidation struct {
+	Max int
+}
+
+// Name returns the validation name.
+func (m *MaxValidation) Name() string {
+	return "max"
+}
+
+// Validate checks if the value meets the maximum.
+func (m *MaxValidation) Validate(value interface{}) error {
+	// TODO: Implement max validation
+	return nil
+}
+
 // Common formats
 const (
 	FormatEmail    = "email"

@@ -88,6 +88,74 @@ func Format(format string) expr.Validation {
 }
 
 
+// Pattern sets a regex pattern for validation.
+//
+// Pattern must appear in an Attribute expression.
+//
+// Example:
+//
+//	Attribute("username", String, Pattern("^[a-zA-Z0-9_]+$"))
+func Pattern(pattern string) expr.Validation {
+	// Check if we're in nested context
+	if attr, ok := eval.Current().(*expr.AttributeExpr); ok {
+		v := &expr.PatternValidation{Pattern: pattern}
+		attr.Validations = append(attr.Validations, v)
+		return v
+	}
+	return &expr.PatternValidation{Pattern: pattern}
+}
+
+// Enum specifies allowed values for an attribute.
+//
+// Enum must appear in an Attribute expression.
+//
+// Example:
+//
+//	Attribute("status", String, Enum("draft", "published", "archived"))
+func Enum(values ...string) expr.Validation {
+	// Check if we're in nested context
+	if attr, ok := eval.Current().(*expr.AttributeExpr); ok {
+		v := &expr.EnumValidation{Values: values}
+		attr.Validations = append(attr.Validations, v)
+		return v
+	}
+	return &expr.EnumValidation{Values: values}
+}
+
+// Min sets the minimum value for numeric attributes.
+//
+// Min must appear in an Attribute expression.
+//
+// Example:
+//
+//	Attribute("age", Int, Min(0))
+func Min(min int) expr.Validation {
+	// Check if we're in nested context
+	if attr, ok := eval.Current().(*expr.AttributeExpr); ok {
+		v := &expr.MinValidation{Min: min}
+		attr.Validations = append(attr.Validations, v)
+		return v
+	}
+	return &expr.MinValidation{Min: min}
+}
+
+// Max sets the maximum value for numeric attributes.
+//
+// Max must appear in an Attribute expression.
+//
+// Example:
+//
+//	Attribute("quantity", Int, Max(100))
+func Max(max int) expr.Validation {
+	// Check if we're in nested context
+	if attr, ok := eval.Current().(*expr.AttributeExpr); ok {
+		v := &expr.MaxValidation{Max: max}
+		attr.Validations = append(attr.Validations, v)
+		return v
+	}
+	return &expr.MaxValidation{Max: max}
+}
+
 // Validation sets a custom validation function.
 //
 // Validation must appear in an Attribute expression.
