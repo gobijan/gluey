@@ -135,7 +135,7 @@ func (c *BaseController) Render(w http.ResponseWriter, view string, data map[str
 	}
 	
 	// Add common data
-	data["AppName"] = "` + strings.Title(g.app.Name) + `"
+	data["AppName"] = "` + ToTitle(g.app.Name) + `"
 	
 	// Execute the layout with the view
 	data["View"] = view
@@ -281,49 +281,49 @@ func (c *%s) Destroy(w http.ResponseWriter, r *http.Request) {
 		g.app.Name,
 		controllerType, resource.Name,
 		controllerType,
-		strings.Title(resource.Name), resource.Name,
-		strings.Title(resource.Name), strings.Title(resource.Name),
+		ToTitle(resource.Name), resource.Name,
+		ToTitle(resource.Name), ToTitle(resource.Name),
 		controllerType,
 		resource.Name,
 		controllerType,
 		resource.Name,
 		resource.Name,
-		strings.Title(singular),
-		strings.Title(singular),
+		ToTitle(singular),
+		ToTitle(singular),
 		resource.Name,
-		strings.Title(resource.Name),
-		strings.Title(resource.Name), resource.Name,
-		resource.Name,
-		controllerType,
-		singular,
-		singular,
-		strings.Title(singular),
-		resource.Name,
-		strings.Title(singular),
-		strings.Title(singular), singular,
-		resource.Name,
-		controllerType,
-		resource.Name,
-		strings.Title(singular),
-		resource.Name,
-		controllerType,
-		strings.Title(singular),
-		resource.Name,
+		ToTitle(resource.Name),
+		ToTitle(resource.Name), resource.Name,
 		resource.Name,
 		controllerType,
 		singular,
 		singular,
-		strings.Title(singular),
+		ToTitle(singular),
 		resource.Name,
-		strings.Title(singular),
-		strings.Title(singular), singular,
-		resource.Name,
-		controllerType,
-		strings.Title(singular),
-		resource.Name,
+		ToTitle(singular),
+		ToTitle(singular), singular,
 		resource.Name,
 		controllerType,
-		strings.Title(singular),
+		resource.Name,
+		ToTitle(singular),
+		resource.Name,
+		controllerType,
+		ToTitle(singular),
+		resource.Name,
+		resource.Name,
+		controllerType,
+		singular,
+		singular,
+		ToTitle(singular),
+		resource.Name,
+		ToTitle(singular),
+		ToTitle(singular), singular,
+		resource.Name,
+		controllerType,
+		ToTitle(singular),
+		resource.Name,
+		resource.Name,
+		controllerType,
+		ToTitle(singular),
 		resource.Name,
 	)
 
@@ -374,7 +374,7 @@ func (c *pagesController) %s(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte("<h1>%s Page</h1><p>TODO: Implement this page</p>"))
 }
-`, methodName, route.Method, route.Path, methodName, page.Name, strings.Title(page.Name))
+`, methodName, route.Method, route.Path, methodName, page.Name, ToTitle(page.Name))
 		}
 	}
 

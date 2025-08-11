@@ -43,7 +43,9 @@ func runExample() error {
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		_ = os.RemoveAll(tmpDir)
+	}()
 
 	// Create a temporary main.go that imports and executes the design
 	mainContent := fmt.Sprintf(`package main

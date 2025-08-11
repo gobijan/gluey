@@ -2,7 +2,6 @@ package codegen
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/gobijan/gluey/expr"
 )
@@ -58,7 +57,7 @@ func (g *ViewsGenerator) GenerateLayout() (string, error) {
 <body>
     <header>
         <div class="container">
-            <h1>` + strings.Title(g.app.Name) + `</h1>
+            <h1>` + ToTitle(g.app.Name) + `</h1>
             <nav>
                 <a href="/">Home</a>
                 {{range $name := .Resources}}
@@ -174,11 +173,11 @@ func (g *ViewsGenerator) generateIndexView(resource *expr.ResourceExpr) string {
 </div>
 {{end}}`,
 		resource.Name,
-		strings.Title(resource.Name),
+		ToTitle(resource.Name),
 		resource.Name,
-		strings.Title(singular),
-		strings.Title(resource.Name),
-		strings.Title(resource.Name),
+		ToTitle(singular),
+		ToTitle(resource.Name),
+		ToTitle(resource.Name),
 		resource.Name,
 		resource.Name,
 		resource.Name,
@@ -219,12 +218,12 @@ func (g *ViewsGenerator) generateShowView(resource *expr.ResourceExpr) string {
 </div>
 {{end}}`,
 		singular,
-		strings.Title(singular),
-		strings.Title(singular),
+		ToTitle(singular),
+		ToTitle(singular),
 		resource.Name,
 		resource.Name,
 		resource.Name,
-		strings.Title(singular),
+		ToTitle(singular),
 	)
 }
 
@@ -255,10 +254,10 @@ func (g *ViewsGenerator) generateNewView(resource *expr.ResourceExpr) string {
 </div>
 {{end}}`,
 		singular,
-		strings.Title(singular),
+		ToTitle(singular),
 		resource.Name,
 		formName,
-		strings.Title(singular),
+		ToTitle(singular),
 		resource.Name,
 	)
 }
@@ -290,27 +289,18 @@ func (g *ViewsGenerator) generateEditView(resource *expr.ResourceExpr) string {
 </div>
 {{end}}`,
 		singular,
-		strings.Title(singular),
+		ToTitle(singular),
 		resource.Name,
-		strings.Title(singular),
-		strings.Title(singular),
+		ToTitle(singular),
+		ToTitle(singular),
 		formName,
-		strings.Title(singular),
+		ToTitle(singular),
 		resource.Name,
-		strings.Title(singular),
+		ToTitle(singular),
 	)
 }
 
 // toSingular converts a plural resource name to singular.
 func (g *ViewsGenerator) toSingular(plural string) string {
-	if strings.HasSuffix(plural, "ies") {
-		return plural[:len(plural)-3] + "y"
-	}
-	if strings.HasSuffix(plural, "es") {
-		return plural[:len(plural)-2]
-	}
-	if strings.HasSuffix(plural, "s") {
-		return plural[:len(plural)-1]
-	}
-	return plural
+	return ToSingular(plural)
 }

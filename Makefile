@@ -138,7 +138,7 @@ bench:
 lint:
 	@echo "$(BLUE)Running linter...$(NC)"
 	@if command -v $(GOLINT) >/dev/null 2>&1; then \
-		$(GOLINT) run ./...; \
+		$(GOLINT) run --no-config ./...; \
 		echo "$(GREEN)✓ Linting complete$(NC)"; \
 	else \
 		echo "$(RED)✗ golangci-lint not installed. Run 'make tools' to install$(NC)"; \

@@ -135,8 +135,12 @@ func TestExampleGenerator(t *testing.T) {
 	// Create temp directory and change to it
 	tmpDir := t.TempDir()
 	oldWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldWd)
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Failed to change directory: %v", err)
+	}
+	defer func() {
+		_ = os.Chdir(oldWd)
+	}()
 
 	// Generate examples
 	gen := codegen.NewExampleGenerator(app)
@@ -174,7 +178,9 @@ func TestExampleGenerator(t *testing.T) {
 	// Files should still exist but not be overwritten
 	// We can check by creating a marker file and seeing if it persists
 	markerPath := "app/controllers/marker.txt"
-	os.WriteFile(markerPath, []byte("test"), 0644)
+	if err := os.WriteFile(markerPath, []byte("test"), 0644); err != nil {
+		t.Fatalf("Failed to write marker file: %v", err)
+	}
 
 	err = gen.Generate()
 	if err != nil {

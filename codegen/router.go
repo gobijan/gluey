@@ -55,7 +55,7 @@ func (g *RouterGenerator) Generate() (string, error) {
 	for _, resource := range g.app.Resources {
 		controllerName := g.toControllerName(resource.Name)
 		buf.WriteString(fmt.Sprintf("\t%s controllers.%s\n",
-			strings.Title(resource.Name), controllerName))
+			ToTitle(resource.Name), controllerName))
 	}
 
 	if len(g.app.Pages) > 0 {
@@ -100,7 +100,7 @@ func (g *RouterGenerator) Generate() (string, error) {
 
 // generateResourceRoutes generates routes for a resource.
 func (g *RouterGenerator) generateResourceRoutes(buf *bytes.Buffer, resource *expr.ResourceExpr) {
-	controllerVar := "c." + strings.Title(resource.Name)
+	controllerVar := "c." + ToTitle(resource.Name)
 	basePath := "/" + resource.Name
 
 	// Handle nested resources
@@ -108,18 +108,18 @@ func (g *RouterGenerator) generateResourceRoutes(buf *bytes.Buffer, resource *ex
 		basePath = "/" + resource.Parent.Name + "/{" + g.toSingular(resource.Parent.Name) + "_id}/" + resource.Name
 	}
 
-	buf.WriteString(fmt.Sprintf("\t// %s routes\n", strings.Title(resource.Name)))
+	fmt.Fprintf(buf, "\t// %s routes\n", ToTitle(resource.Name))
 
 	for _, action := range resource.Actions {
 		method, path := g.getRouteForAction(action, basePath, resource.Name)
-		handler := fmt.Sprintf("%s.%s", controllerVar, strings.Title(action))
+		handler := fmt.Sprintf("%s.%s", controllerVar, ToTitle(action))
 
 		// Add auth comment if required
 		if auths, ok := resource.AuthRequirements[action]; ok && len(auths) > 0 {
-			buf.WriteString(fmt.Sprintf("\t// Requires: %s\n", strings.Join(auths, ", ")))
+			fmt.Fprintf(buf, "\t// Requires: %s\n", strings.Join(auths, ", "))
 		}
 
-		buf.WriteString(fmt.Sprintf("\tmux.HandleFunc(\"%s %s\", %s)\n", method, path, handler))
+		fmt.Fprintf(buf, "\tmux.HandleFunc(\"%s %s\", %s)\n", method, path, handler)
 	}
 }
 
@@ -131,10 +131,10 @@ func (g *RouterGenerator) generatePageRoutes(buf *bytes.Buffer, page *expr.PageE
 
 		// Add auth comment if required
 		if len(page.AuthRequirements) > 0 {
-			buf.WriteString(fmt.Sprintf("\t// Requires: %s\n", strings.Join(page.AuthRequirements, ", ")))
+			fmt.Fprintf(buf, "\t// Requires: %s\n", strings.Join(page.AuthRequirements, ", "))
 		}
 
-		buf.WriteString(fmt.Sprintf("\tmux.HandleFunc(\"%s %s\", %s)\n", route.Method, route.Path, handler))
+		fmt.Fprintf(buf, "\tmux.HandleFunc(\"%s %s\", %s)\n", route.Method, route.Path, handler)
 	}
 }
 
@@ -167,7 +167,7 @@ func (g *RouterGenerator) getRouteForAction(action, basePath, resourceName strin
 
 // toControllerName converts a resource name to a controller name.
 func (g *RouterGenerator) toControllerName(resourceName string) string {
-	name := strings.Title(resourceName)
+	name := ToTitle(resourceName)
 	if !strings.HasSuffix(name, "s") {
 		name += "s"
 	}
@@ -176,23 +176,14 @@ func (g *RouterGenerator) toControllerName(resourceName string) string {
 
 // toSingular converts a plural resource name to singular.
 func (g *RouterGenerator) toSingular(plural string) string {
-	if strings.HasSuffix(plural, "ies") {
-		return plural[:len(plural)-3] + "y"
-	}
-	if strings.HasSuffix(plural, "es") {
-		return plural[:len(plural)-2]
-	}
-	if strings.HasSuffix(plural, "s") {
-		return plural[:len(plural)-1]
-	}
-	return plural
+	return ToSingular(plural)
 }
 
 // toPageMethodName converts a page name and method to a method name.
 func (g *RouterGenerator) toPageMethodName(pageName, method string) string {
-	name := strings.Title(pageName)
+	name := ToTitle(pageName)
 	if method != "GET" {
-		name += strings.Title(strings.ToLower(method))
+		name += ToTitle(strings.ToLower(method))
 	}
 	return name
 }

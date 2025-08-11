@@ -71,13 +71,13 @@ func Attribute(name string, args ...interface{}) {
 	// Parse arguments - type, validations, and description
 	for _, arg := range args {
 		switch v := arg.(type) {
-		case expr.DataType:
-			attr.Type = v
 		case *expr.PrimitiveType:
 			attr.Type = v
 		case *expr.ArrayType:
 			attr.Type = v
 		case *expr.MapType:
+			attr.Type = v
+		case expr.DataType:
 			attr.Type = v
 		case expr.Validation:
 			attr.Validations = append(attr.Validations, v)

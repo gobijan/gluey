@@ -6,7 +6,12 @@ import (
 	"io"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
+
+var titleCaser = cases.Title(language.English)
 
 // TemplateEngine handles template rendering.
 type TemplateEngine struct {
@@ -69,7 +74,9 @@ func DefaultFuncMap() template.FuncMap {
 		// String helpers
 		"upper": strings.ToUpper,
 		"lower": strings.ToLower,
-		"title": strings.Title,
+		"title": func(s string) string {
+			return titleCaser.String(s)
+		},
 
 		// Path helpers
 		"link_to":  linkTo,

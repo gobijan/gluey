@@ -116,24 +116,23 @@ func TestPage(t *testing.T) {
 	// Find pages by name
 	var home, about *expr.PageExpr
 	for _, p := range app.Pages {
-		if p.Name == "home" {
+		switch p.Name {
+		case "home":
 			home = p
-		} else if p.Name == "about" {
+		case "about":
 			about = p
 		}
 	}
 
 	if home == nil {
 		t.Error("home page not found")
-	}
-	if len(home.Routes) != 1 || home.Routes[0].Path != "/" {
+	} else if len(home.Routes) != 1 || home.Routes[0].Path != "/" {
 		t.Error("home page route incorrect")
 	}
 
 	if about == nil {
 		t.Error("about page not found")
-	}
-	if len(about.Routes) != 1 || about.Routes[0].Path != "/about" {
+	} else if len(about.Routes) != 1 || about.Routes[0].Path != "/about" {
 		t.Error("about page route incorrect")
 	}
 }
@@ -196,8 +195,7 @@ func TestType(t *testing.T) {
 	rememberMe := form.Attribute("remember_me")
 	if rememberMe == nil {
 		t.Error("remember_me attribute not found")
-	}
-	if rememberMe.Type != dsl.Boolean {
+	} else if rememberMe.Type != dsl.Boolean {
 		t.Error("remember_me should be boolean type")
 	}
 }

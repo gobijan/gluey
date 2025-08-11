@@ -282,12 +282,5 @@ func (g *TypesGenerator) goType(dataType expr.DataType) string {
 
 // toGoName converts a field name to a Go field name.
 func (g *TypesGenerator) toGoName(name string) string {
-	// Split by underscore and capitalize each part
-	parts := strings.Split(name, "_")
-	for i, part := range parts {
-		if part != "" {
-			parts[i] = strings.Title(part)
-		}
-	}
-	return strings.Join(parts, "")
+	return ToCamelCase(name)
 }
