@@ -45,3 +45,4 @@ dist/
 examples/*/gen/
 examples/*/app/
 examples/*/main.go
+alpha

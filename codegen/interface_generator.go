@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gobijan/gluey/expr"
 )
@@ -255,19 +256,67 @@ func (g *InterfaceGenerator) generateRouterContent() string {
 // addResourceRoutes adds resource routes to the router code.
 func (g *InterfaceGenerator) addResourceRoutes(code *string, resource *expr.ResourceExpr) {
 	controllerVar := "c." + toTitle(resource.Name)
+	
+	// Use singular path for singular resources
 	basePath := "/" + resource.Name
+	if resource.Singular {
+		// Remove trailing 's' if present for singular resources
+		// This is a simple heuristic - could be improved
+		if strings.HasSuffix(resource.Name, "s") {
+			basePath = "/" + resource.Name[:len(resource.Name)-1]
+		}
+	}
 
 	*code += fmt.Sprintf("\t// %s routes\n", toTitle(resource.Name))
 
-	// Order matters for Go 1.22+ routing
-	// More specific paths first
-	*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s/new\", %s.New)\n", basePath, controllerVar)
-	*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s/{id}/edit\", %s.Edit)\n", basePath, controllerVar)
-	*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s/{id}\", %s.Show)\n", basePath, controllerVar)
-	*code += fmt.Sprintf("\tmux.HandleFunc(\"POST %s/{id}/delete\", %s.Destroy)\n", basePath, controllerVar)
-	*code += fmt.Sprintf("\tmux.HandleFunc(\"POST %s/{id}\", %s.Update)\n", basePath, controllerVar)
-	*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s\", %s.Index)\n", basePath, controllerVar)
-	*code += fmt.Sprintf("\tmux.HandleFunc(\"POST %s\", %s.Create)\n", basePath, controllerVar)
+	// For singular resources, routes are different
+	if resource.Singular {
+		// Singular resources don't have index or {id} in paths
+		if resource.HasAction("new") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s/new\", %s.New)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("edit") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s/edit\", %s.Edit)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("show") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s\", %s.Show)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("destroy") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"DELETE %s\", %s.Destroy)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("update") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"PATCH %s\", %s.Update)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("create") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"POST %s\", %s.Create)\n", basePath, controllerVar)
+		}
+	} else {
+		// Regular plural resources
+		// Order matters for Go 1.22+ routing - more specific paths first
+		if resource.HasAction("new") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s/new\", %s.New)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("edit") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s/{id}/edit\", %s.Edit)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("show") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s/{id}\", %s.Show)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("destroy") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"DELETE %s/{id}\", %s.Destroy)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("update") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"PATCH %s/{id}\", %s.Update)\n", basePath, controllerVar)
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"PUT %s/{id}\", %s.Update)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("index") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"GET %s\", %s.Index)\n", basePath, controllerVar)
+		}
+		if resource.HasAction("create") {
+			*code += fmt.Sprintf("\tmux.HandleFunc(\"POST %s\", %s.Create)\n", basePath, controllerVar)
+		}
+	}
+	
 	*code += "\n"
 }
 

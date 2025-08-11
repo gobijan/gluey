@@ -47,68 +47,107 @@ var _ = WebApp("portal", func() {
 })
 ```
 
-### Type Definitions
+### Resource-Based Forms Philosophy
 
-Types are defined within WebApp scope - completely separate from API types:
+**Everything is a resource.** Forms are always defined within the context of the resource that handles them. This creates a consistent, RESTful approach where:
 
-```go
-var _ = WebApp("portal", func() {
-    // Form types with validation
-    Type("NewPostForm", func() {
-        Attribute("title", String, Required(), MaxLength(200))
-        Attribute("content", String, Required())
-        Attribute("category_id", String, Required())
-        Attribute("tags", ArrayOf(String))
-    })
-    
-    Type("EditPostForm", func() {
-        Attribute("title", String, MaxLength(200))
-        Attribute("content", String)
-        Attribute("published", Boolean)
-        // All fields optional for partial updates
-    })
-    
-    Type("LoginForm", func() {
-        Attribute("email", String, Required(), Format(FormatEmail))
-        Attribute("password", String, Required(), MinLength(8))
-        Attribute("remember_me", Boolean)
-    })
-    
-    Type("SearchForm", func() {
-        Attribute("q", String)
-        Attribute("category", String)
-        Attribute("from_date", String, Format(FormatDate))
-        Attribute("to_date", String, Format(FormatDate))
-    })
-})
-```
+- Login forms belong to a `sessions` resource
+- Search forms belong to a `searches` resource  
+- Contact forms belong to a `contacts` resource
+- User registration belongs to the `users` resource
+
+No separate form types exist at the application level - all forms are resource forms.
 
 ### Resources (RESTful Controllers)
 
 ```go
 var _ = WebApp("portal", func() {
-    // Simplest case - generates all 7 RESTful routes
-    Resource("posts")
-    // Automatically looks for NewPostForm and EditPostForm
-    
-    // With customization
-    Resource("users", func() {
-        // Specify which actions to generate
-        Actions("index", "show", "edit", "update")
-        
-        // Authentication requirements
-        Auth("authenticated").Except("index", "show")
-        Auth("admin").Only("destroy")
-        
-        // Structural customization (not behavior)
-        Index(func() {
-            Paginate(20)                    // Generates pagination helpers
-            Searchable("name", "email")     // Generates search helpers
-            Filterable("status", "role")    // Generates filter helpers
+    // Standard CRUD resource with forms
+    Resource("posts", func() {
+        // Define forms within the resource
+        Form("PostForm", func() {
+            Attribute("title", String, Required(), MaxLength(200))
+            Attribute("content", String, Required())
+            Attribute("published", Boolean)
         })
         
+        // Use the same form for create and update
+        Create(func() {
+            UseForm("PostForm")
+        })
         Update(func() {
-            Form(EditUserForm)  // Override form convention
+            UseForm("PostForm")
+        })
+        
+        // Query parameters for index
+        Index(func() {
+            Params(func() {
+                Param("search", String)
+                Param("page", Int, Default(1))
+                Param("per_page", Int, Default(20))
+            })
+        })
+    })
+    
+    // Resource with different forms for different actions
+    Resource("users", func() {
+        // Signup form for creating users
+        Form("SignupForm", func() {
+            Attribute("name", String, Required())
+            Attribute("email", String, Required(), Format(FormatEmail))
+            Attribute("password", String, Required(), MinLength(8))
+            Attribute("password_confirmation", String, Required())
+        })
+        
+        // Profile form for editing users
+        Form("ProfileForm", func() {
+            Attribute("name", String)
+            Attribute("email", String, Format(FormatEmail))
+            Attribute("bio", String, MaxLength(500))
+        })
+        
+        Create(func() {
+            UseForm("SignupForm")
+        })
+        Update(func() {
+            UseForm("ProfileForm")
+        })
+        
+        // Authentication requirements
+        Auth("authenticated").Except("new", "create")
+        Auth("owner").Only("edit", "update", "destroy")
+    })
+    
+    // Singular resource for session (login/logout)
+    Resource("session", func() {
+        Singular()  // Makes routes singular (/session not /sessions)
+        
+        Form("LoginForm", func() {
+            Attribute("email", String, Required(), Format(FormatEmail))
+            Attribute("password", String, Required())
+            Attribute("remember_me", Boolean)
+        })
+        
+        Actions("new", "create", "destroy")  // Only login/logout actions
+        
+        Create(func() {
+            UseForm("LoginForm")
+        })
+    })
+    
+    // Search as a resource
+    Resource("searches", func() {
+        Form("SearchForm", func() {
+            Attribute("q", String, Required())
+            Attribute("category", String)
+            Attribute("from_date", String, Format(FormatDate))
+            Attribute("to_date", String, Format(FormatDate))
+        })
+        
+        Actions("new", "create")  // Search form and results
+        
+        Create(func() {
+            UseForm("SearchForm")
         })
     })
     
@@ -122,44 +161,49 @@ var _ = WebApp("portal", func() {
 })
 ```
 
-### Non-Resource Pages
+### Static Pages (Non-Resource)
 
 ```go
 var _ = WebApp("portal", func() {
-    // Simple pages
+    // Only truly static content uses Page
     Page("home", "/")
     Page("about", "/about")
+    Page("terms", "/terms")
+    Page("privacy", "/privacy")
     
-    // Page with configuration
+    // Pages can have layouts and auth
     Page("dashboard", func() {
         Route("GET", "/dashboard")
         Layout("admin")
         Auth("authenticated")
     })
     
-    // Form page (structure only, no behavior)
-    Page("contact", func() {
-        Route("GET", "/contact")
-        Route("POST", "/contact")
-        Form(ContactForm)
-        // No OnSubmit, Flash, or Redirect - that's implementation
-    })
+    // Note: Contact forms should be a resource instead:
+    // Resource("contacts", func() { ... })
 })
 ```
 
 ## Conventions
 
-### Naming Conventions
+### Form Naming Conventions
 
-| Resource | Form Types | Usage |
-|----------|------------|-------|
-| `posts` | `NewPostForm` | `new` and `create` actions |
-| `posts` | `EditPostForm` | `edit` and `update` actions |
-| `posts` | `PostForm` | All actions (if only one form defined) |
+Forms are defined within resources and can be named anything, but these conventions help:
+
+| Resource | Conventional Form Names | Usage |
+|----------|------------------------|-------|
+| `posts` | `PostForm` | Single form for both create and update |
+| `posts` | `CreatePostForm`, `UpdatePostForm` | Different forms for create vs update |
+| `users` | `SignupForm`, `ProfileForm` | Semantic names for user actions |
+| `session` | `LoginForm` | Form for session creation |
+| `searches` | `SearchForm` | Form for search parameters |
+
+If no forms are defined, the generator creates placeholder forms following the pattern:
+- `New{Resource}Form` for create actions
+- `Edit{Resource}Form` for update actions
 
 ### RESTful Routes
 
-For `Resource("posts")`, generates:
+For standard resources like `Resource("posts")`:
 
 | HTTP Method | Path | Controller Method | View Template |
 |-------------|------|------------------|---------------|
@@ -170,6 +214,14 @@ For `Resource("posts")`, generates:
 | GET | /posts/{id}/edit | Edit() | posts/edit.html |
 | PUT/PATCH | /posts/{id} | Update() | - (typically redirects) |
 | DELETE | /posts/{id} | Destroy() | - (typically redirects) |
+
+For singular resources with `Singular()` like `Resource("session")`:
+
+| HTTP Method | Path | Controller Method | Purpose |
+|-------------|------|------------------|---------|
+| GET | /session/new | New() | Login page |
+| POST | /session | Create() | Process login |
+| DELETE | /session | Destroy() | Logout |
 
 ### Generated Directory Structure
 
@@ -214,25 +266,51 @@ gen/webapp/{app_name}/
 ```go
 // gen/webapp/portal/types.go
 
-type NewPostForm struct {
-    Title      string   `form:"title" validate:"required,max=200"`
-    Content    string   `form:"content" validate:"required"`
-    CategoryID string   `form:"category_id" validate:"required"`
-    Tags       []string `form:"tags"`
+// From Resource("posts") with Form("PostForm")
+type PostForm struct {
+    Title     string `form:"title" json:"title" validate:"required,max=200"`
+    Content   string `form:"content" json:"content" validate:"required"`
+    Published bool   `form:"published" json:"published"`
 }
 
-func (f *NewPostForm) Validate() error {
-    return validator.Validate(f)
+func (f *PostForm) Validate() error {
+    v := runtime.NewValidator()
+    v.Required("title", f.Title)
+    v.MaxLength("title", f.Title, 200)
+    v.Required("content", f.Content)
+    
+    if !v.Valid() {
+        return v.Errors()
+    }
+    return nil
 }
 
-type EditPostForm struct {
-    Title     string `form:"title" validate:"omitempty,max=200"`
-    Content   string `form:"content"`
-    Published bool   `form:"published"`
+// From Resource("users") with different forms
+type SignupForm struct {
+    Name                 string `form:"name" json:"name" validate:"required"`
+    Email                string `form:"email" json:"email" validate:"required,email"`
+    Password             string `form:"password" json:"password" validate:"required,min=8"`
+    PasswordConfirmation string `form:"password_confirmation" json:"password_confirmation" validate:"required"`
 }
 
-func (f *EditPostForm) Validate() error {
-    return validator.Validate(f)
+type ProfileForm struct {
+    Name  string `form:"name" json:"name,omitempty"`
+    Email string `form:"email" json:"email,omitempty" validate:"omitempty,email"`
+    Bio   string `form:"bio" json:"bio,omitempty" validate:"omitempty,max=500"`
+}
+
+// From Resource("session") 
+type LoginForm struct {
+    Email      string `form:"email" json:"email" validate:"required,email"`
+    Password   string `form:"password" json:"password" validate:"required"`
+    RememberMe bool   `form:"remember_me" json:"remember_me"`
+}
+
+// Query parameters from Index()
+type PostsIndexParams struct {
+    Search  string `form:"search" json:"search,omitempty"`
+    Page    int    `form:"page" json:"page,omitempty"`
+    PerPage int    `form:"per_page" json:"per_page,omitempty"`
 }
 ```
 
@@ -459,8 +537,15 @@ func (c *PostsController) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *PostsController) Create(w http.ResponseWriter, r *http.Request) {
-    var form gen.NewPostForm
-    if err := c.Bind(r, &form); err != nil {
+    // Parse form data into the generated struct
+    r.ParseForm()
+    var form gen.PostForm
+    form.Title = r.FormValue("title")
+    form.Content = r.FormValue("content")
+    form.Published = r.FormValue("published") == "true"
+    
+    // Validate using generated validation
+    if err := form.Validate(); err != nil {
         // Re-render with errors
         c.Render(w, "posts/new", map[string]any{
             "Form":   form,
@@ -485,27 +570,24 @@ func (c *PostsController) Create(w http.ResponseWriter, r *http.Request) {
 func (c *PostsController) Update(w http.ResponseWriter, r *http.Request) {
     id := c.Param(r, "id")
     
-    var form gen.EditPostForm
-    if err := c.Bind(r, &form); err != nil {
+    // Parse and validate form
+    r.ParseForm()
+    var form gen.PostForm
+    form.Title = r.FormValue("title")
+    form.Content = r.FormValue("content")
+    form.Published = r.FormValue("published") == "true"
+    
+    if err := form.Validate(); err != nil {
         c.Render(w, "posts/edit", map[string]any{
             "Form": form,
             "Errors": err,
+            "PostID": id,
         })
         return
     }
     
-    // Partial updates - only update provided fields
-    updates := make(map[string]any)
-    if form.Title != "" {
-        updates["title"] = form.Title
-    }
-    if form.Content != "" {
-        updates["content"] = form.Content
-    }
-    // Bool is always updated
-    updates["published"] = form.Published
-    
-    if err := c.updatePost(id, updates); err != nil {
+    // Update the post
+    if err := c.updatePost(id, &form); err != nil {
         c.Flash(r, "error", "Could not update post")
         c.Render(w, "posts/edit", map[string]any{"Form": form})
         return
@@ -520,11 +602,11 @@ func (c *PostsController) queryPosts(search string) []*Post {
     // Implementation
 }
 
-func (c *PostsController) createPost(form gen.NewPostForm) (*Post, error) {
-    // Implementation
+func (c *PostsController) createPost(form gen.PostForm) (*Post, error) {
+    // Implementation - use form.Title, form.Content, etc.
 }
 
-func (c *PostsController) updatePost(id string, updates map[string]any) error {
+func (c *PostsController) updatePost(id string, form *gen.PostForm) error {
     // Implementation
 }
 ```
@@ -587,10 +669,44 @@ import . "goa.design/goa/v3/dsl"
 var _ = WebApp("myapp", func() {
     Description("My Rails-like Go application")
     
-    // Start simple
-    Resource("posts")
-    Resource("users")
+    // Everything is a resource
+    Resource("posts", func() {
+        Form("PostForm", func() {
+            Attribute("title", String, Required())
+            Attribute("content", String, Required())
+        })
+        Create(func() {
+            UseForm("PostForm")
+        })
+        Update(func() {
+            UseForm("PostForm")
+        })
+    })
     
+    Resource("users", func() {
+        Form("SignupForm", func() {
+            Attribute("email", String, Required(), Format(FormatEmail))
+            Attribute("password", String, Required(), MinLength(8))
+        })
+        Actions("new", "create")  // Only signup actions
+        Create(func() {
+            UseForm("SignupForm")
+        })
+    })
+    
+    Resource("session", func() {
+        Singular()  // Login/logout
+        Form("LoginForm", func() {
+            Attribute("email", String, Required(), Format(FormatEmail))
+            Attribute("password", String, Required())
+        })
+        Actions("new", "create", "destroy")
+        Create(func() {
+            UseForm("LoginForm")
+        })
+    })
+    
+    // Only truly static pages use Page()
     Page("home", "/")
     Page("about", "/about")
 })

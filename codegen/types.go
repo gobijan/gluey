@@ -45,14 +45,27 @@ func (g *TypesGenerator) Generate() (string, error) {
 	// Write package header
 	buf.WriteString("package types\n\n")
 
+	// Check if we need imports
+	needsImports := len(g.app.Forms) > 0
+
+	// Also check resource forms
+	if !needsImports {
+		for _, resource := range g.app.Resources {
+			if len(resource.Forms) > 0 {
+				needsImports = true
+				break
+			}
+		}
+	}
+
 	// Add imports if needed
-	if len(g.app.Forms) > 0 {
+	if needsImports {
 		buf.WriteString("import (\n")
 		buf.WriteString("\t\"github.com/gobijan/gluey/runtime\"\n")
 		buf.WriteString(")\n\n")
 	}
 
-	// Generate each form type
+	// Generate app-level form types (legacy support)
 	for _, form := range g.app.Forms {
 		code, err := g.generateForm(form)
 		if err != nil {
@@ -62,20 +75,58 @@ func (g *TypesGenerator) Generate() (string, error) {
 		buf.WriteString("\n")
 	}
 
-	// Generate form types based on resource conventions
+	// Generate resource-level forms
 	for _, resource := range g.app.Resources {
-		// Check if custom forms are defined
+		// Generate forms defined within the resource
+		for _, form := range resource.Forms {
+			code, err := g.generateForm(form)
+			if err != nil {
+				return "", err
+			}
+			buf.WriteString(code)
+			buf.WriteString("\n")
+		}
+
+		// Generate query parameter types for actions with params
+		if config, ok := resource.ActionConfigs["index"]; ok && len(config.Params) > 0 {
+			typeName := ToCamelCase(resource.Name) + "IndexParams"
+			code := g.generateParamsType(typeName, config.Params)
+			buf.WriteString(code)
+			buf.WriteString("\n")
+		}
+
+		// Check if we need to generate default forms
 		newFormName := resource.NewFormName()
-		if g.app.Form(newFormName) == nil {
-			// Generate default new form
+		needsNewForm := true
+		editFormName := resource.EditFormName()
+		needsEditForm := true
+
+		// Check if forms exist in resource.Forms
+		for name := range resource.Forms {
+			if name == newFormName {
+				needsNewForm = false
+			}
+			if name == editFormName {
+				needsEditForm = false
+			}
+		}
+
+		// Also check app-level forms (legacy)
+		if g.app.Form(newFormName) != nil {
+			needsNewForm = false
+		}
+		if g.app.Form(editFormName) != nil {
+			needsEditForm = false
+		}
+
+		// Generate default forms if needed
+		if needsNewForm {
 			code := g.generateDefaultNewForm(resource)
 			buf.WriteString(code)
 			buf.WriteString("\n")
 		}
 
-		editFormName := resource.EditFormName()
-		if g.app.Form(editFormName) == nil {
-			// Generate default edit form
+		if needsEditForm {
 			code := g.generateDefaultEditForm(resource)
 			buf.WriteString(code)
 			buf.WriteString("\n")
@@ -278,6 +329,28 @@ func (g *TypesGenerator) goType(dataType expr.DataType) string {
 	}
 
 	return "any"
+}
+
+// generateParamsType generates a query parameters type.
+func (g *TypesGenerator) generateParamsType(name string, params []*expr.ParamExpr) string {
+	var buf bytes.Buffer
+
+	buf.WriteString(fmt.Sprintf("// %s represents query parameters.\n", name))
+	buf.WriteString(fmt.Sprintf("type %s struct {\n", name))
+
+	for _, param := range params {
+		fieldName := g.toGoName(param.Name)
+		fieldType := g.goType(param.Type)
+
+		// Build tags
+		tags := fmt.Sprintf("`form:\"%s\" json:\"%s,omitempty\"`", param.Name, param.Name)
+
+		buf.WriteString(fmt.Sprintf("\t%s %s %s\n", fieldName, fieldType, tags))
+	}
+
+	buf.WriteString("}\n")
+
+	return buf.String()
 }
 
 // toGoName converts a field name to a Go field name.

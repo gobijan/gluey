@@ -200,8 +200,18 @@ func Index(fn func()) {
 		eval.IncompatibleDSL()
 		return
 	}
+
+	// Create or get action config
+	if res.ActionConfigs == nil {
+		res.ActionConfigs = make(map[string]*expr.ActionConfig)
+	}
+	if res.ActionConfigs["index"] == nil {
+		res.ActionConfigs["index"] = &expr.ActionConfig{Action: "index"}
+	}
+
 	if fn != nil {
-		eval.Execute(fn, res)
+		// Execute in the context of the action config
+		eval.Execute(fn, res.ActionConfigs["index"])
 	}
 }
 
@@ -268,6 +278,38 @@ func Filterable(fields ...string) {
 	resource.FilterableFields["index"] = fields
 }
 
+// Create configures the create action.
+//
+// Create must appear in a Resource expression.
+//
+// Example:
+//
+//	Resource("posts", func() {
+//	    Create(func() {
+//	        UseForm("PostForm")
+//	    })
+//	})
+func Create(fn func()) {
+	res, ok := eval.Current().(*expr.ResourceExpr)
+	if !ok {
+		eval.IncompatibleDSL()
+		return
+	}
+
+	// Create or get action config
+	if res.ActionConfigs == nil {
+		res.ActionConfigs = make(map[string]*expr.ActionConfig)
+	}
+	if res.ActionConfigs["create"] == nil {
+		res.ActionConfigs["create"] = &expr.ActionConfig{Action: "create"}
+	}
+
+	if fn != nil {
+		// Execute in the context of the action config
+		eval.Execute(fn, res.ActionConfigs["create"])
+	}
+}
+
 // Update configures the update action.
 //
 // Update must appear in a Resource expression.
@@ -276,7 +318,7 @@ func Filterable(fields ...string) {
 //
 //	Resource("posts", func() {
 //	    Update(func() {
-//	        Form("EditPostForm")
+//	        UseForm("EditPostForm")
 //	    })
 //	})
 func Update(fn func()) {
@@ -285,21 +327,71 @@ func Update(fn func()) {
 		eval.IncompatibleDSL()
 		return
 	}
+
+	// Create or get action config
+	if res.ActionConfigs == nil {
+		res.ActionConfigs = make(map[string]*expr.ActionConfig)
+	}
+	if res.ActionConfigs["update"] == nil {
+		res.ActionConfigs["update"] = &expr.ActionConfig{Action: "update"}
+	}
+
 	if fn != nil {
-		eval.Execute(fn, res)
+		// Execute in the context of the action config
+		eval.Execute(fn, res.ActionConfigs["update"])
 	}
 }
 
-// Form specifies a custom form for an action.
+// Form defines a form within a resource.
 //
-// Form must appear in an action configuration.
+// Form must appear in a Resource expression.
 //
 // Example:
 //
-//	Update(func() {
-//	    Form("CustomEditForm")
+//	Resource("posts", func() {
+//	    Form("PostForm", func() {
+//	        Attribute("title", String, Required())
+//	        Attribute("content", String, Required())
+//	    })
 //	})
-func Form(name string) {
+func Form(name string, fn func()) {
+	resource, ok := eval.Current().(*expr.ResourceExpr)
+	if !ok {
+		eval.IncompatibleDSL()
+		return
+	}
+	if resource.Forms == nil {
+		resource.Forms = make(map[string]*expr.FormExpr)
+	}
+
+	form := &expr.FormExpr{
+		Name: name,
+	}
+
+	if fn != nil {
+		eval.Execute(fn, form)
+	}
+
+	resource.Forms[name] = form
+}
+
+// UseForm binds a form to the current action.
+//
+// UseForm must appear in an action configuration (Create, Update, etc).
+//
+// Example:
+//
+//	Create(func() {
+//	    UseForm("PostForm")
+//	})
+func UseForm(name string) {
+	// Try to get action config from context
+	if config, ok := eval.Current().(*expr.ActionConfig); ok {
+		config.FormName = name
+		return
+	}
+
+	// Fallback to resource level (legacy)
 	resource, ok := eval.Current().(*expr.ResourceExpr)
 	if !ok {
 		eval.IncompatibleDSL()
@@ -308,10 +400,80 @@ func Form(name string) {
 	if resource.CustomForms == nil {
 		resource.CustomForms = make(map[string]string)
 	}
-	// Infer the action from context (would need more context tracking)
-	// For now, set for common actions
+	// Set for common actions
 	resource.CustomForms["new"] = name
 	resource.CustomForms["create"] = name
 	resource.CustomForms["edit"] = name
 	resource.CustomForms["update"] = name
+}
+
+// Singular marks a resource as singular (e.g., session vs sessions).
+//
+// Singular must appear in a Resource expression.
+//
+// Example:
+//
+//	Resource("session", func() {
+//	    Singular()
+//	})
+func Singular() {
+	resource, ok := eval.Current().(*expr.ResourceExpr)
+	if !ok {
+		eval.IncompatibleDSL()
+		return
+	}
+	resource.Singular = true
+}
+
+// Params defines query parameters for an action.
+//
+// Params must appear in an action configuration.
+//
+// Example:
+//
+//	Index(func() {
+//	    Params(func() {
+//	        Param("search", String)
+//	        Param("page", Int, Default(1))
+//	    })
+//	})
+func Params(fn func()) {
+	config, ok := eval.Current().(*expr.ActionConfig)
+	if !ok {
+		eval.IncompatibleDSL()
+		return
+	}
+	if fn != nil {
+		eval.Execute(fn, config)
+	}
+}
+
+// Param defines a query parameter.
+//
+// Param must appear in a Params expression.
+//
+// Example:
+//
+//	Param("page", Int, Default(1), Max(100))
+func Param(name string, dataType interface{}, fns ...func()) {
+	config, ok := eval.Current().(*expr.ActionConfig)
+	if !ok {
+		eval.IncompatibleDSL()
+		return
+	}
+
+	param := &expr.ParamExpr{
+		Name: name,
+		Type: dataType.(expr.DataType),
+	}
+
+	// Process functions like Default, Max, etc.
+	for _, fn := range fns {
+		fn() // These would set context on param
+	}
+
+	if config.Params == nil {
+		config.Params = make([]*expr.ParamExpr, 0)
+	}
+	config.Params = append(config.Params, param)
 }

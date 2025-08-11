@@ -151,20 +151,81 @@ import . "github.com/gobijan/gluey/dsl"
 var _ = WebApp("%s", func() {
 	Description("My %s application")
 	
-	// Define your resources
-	Resource("posts")
-	Resource("users")
+	// Posts resource with CRUD forms
+	Resource("posts", func() {
+		// Define a form for posts
+		Form("PostForm", func() {
+			Attribute("title", String, Required(), MaxLength(200))
+			Attribute("content", String, Required(), MinLength(10))
+			Attribute("published", Boolean)
+		})
+		
+		// Use the same form for both create and update
+		Create(func() {
+			UseForm("PostForm")
+		})
+		Update(func() {
+			UseForm("PostForm")
+		})
+		
+		// Add search and pagination to index
+		Index(func() {
+			Params(func() {
+				Param("search", String)
+				Param("page", Int)
+				Param("per_page", Int)
+			})
+		})
+	})
 	
-	// Define pages
+	// Users resource with different forms for signup and profile
+	Resource("users", func() {
+		// Signup form for creating users
+		Form("SignupForm", func() {
+			Attribute("name", String, Required())
+			Attribute("email", String, Required(), Format(FormatEmail))
+			Attribute("password", String, Required(), MinLength(8))
+			Attribute("password_confirmation", String, Required())
+		})
+		
+		// Profile form for updating users
+		Form("ProfileForm", func() {
+			Attribute("name", String)
+			Attribute("email", String, Format(FormatEmail))
+			Attribute("bio", String, MaxLength(500))
+		})
+		
+		Create(func() {
+			UseForm("SignupForm")
+		})
+		Update(func() {
+			UseForm("ProfileForm")
+		})
+		
+		// Only allow certain actions
+		Actions("index", "show", "new", "create", "edit", "update")
+	})
+	
+	// Session resource for authentication (singular)
+	Resource("session", func() {
+		Singular() // Makes routes singular (/session not /sessions)
+		
+		Form("LoginForm", func() {
+			Attribute("email", String, Required(), Format(FormatEmail))
+			Attribute("password", String, Required(), MinLength(8))
+			Attribute("remember_me", Boolean)
+		})
+		
+		Actions("new", "create", "destroy") // Only login/logout actions
+		
+		Create(func() {
+			UseForm("LoginForm")
+		})
+	})
+	
+	// Static pages
 	Page("home", "/")
 	Page("about", "/about")
-	
-	// Define forms
-	Type("LoginForm", func() {
-		Attribute("email", String, Required(), Format(FormatEmail))
-		Attribute("password", String, Required(), MinLength(8))
-		Attribute("remember_me", Boolean)
-	})
 })
 `, projectName, projectName)
 
@@ -221,6 +282,8 @@ func main() {
 		// Initialize your controllers here
 		// Example:
 		// Posts: controllers.NewPosts(),
+		// Users: controllers.NewUsers(),
+		// Session: controllers.NewSession(),
 		// Pages: controllers.NewPagesController(),
 	}
 	

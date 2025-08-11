@@ -31,14 +31,16 @@ make install
 
 ### Create Your First App
 
-#### 1. Create a new directory and initialize Go module
+#### 1. Generate a new Gluey project
 
 ```bash
-mkdir blogapp && cd blogapp
-go mod init blogapp
+gluey new blogapp
+cd blogapp
 ```
 
-#### 2. Create your design file
+This creates a complete project structure with example DSL showing best practices.
+
+#### 2. Or create from scratch
 
 Create `design/app.go`:
 
@@ -50,90 +52,130 @@ import . "github.com/gobijan/gluey/dsl"
 var _ = WebApp("blogapp", func() {
     Description("A simple blog application")
     
-    // Define a posts resource with all RESTful actions
+    // Posts resource with CRUD forms
     Resource("posts", func() {
-        // Generates: index, show, new, create, edit, update, destroy
+        // Define form inline with the resource
+        Form("PostForm", func() {
+            Attribute("title", String, Required(), MaxLength(200))
+            Attribute("content", String, Required(), MinLength(10))
+            Attribute("published", Boolean)
+        })
+        
+        // Use the same form for create and update
+        Create(func() {
+            UseForm("PostForm")
+        })
+        Update(func() {
+            UseForm("PostForm")
+        })
+        
+        // Add search and pagination
+        Index(func() {
+            Params(func() {
+                Param("search", String)
+                Param("page", Int)
+            })
+        })
     })
     
-    // Define a users resource with limited actions
+    // Users with different forms for signup vs profile
     Resource("users", func() {
-        Actions("index", "show", "new", "create")
+        Form("SignupForm", func() {
+            Attribute("email", String, Required(), Format(FormatEmail))
+            Attribute("password", String, Required(), MinLength(8))
+        })
+        
+        Form("ProfileForm", func() {
+            Attribute("name", String)
+            Attribute("bio", String, MaxLength(500))
+        })
+        
+        Create(func() {
+            UseForm("SignupForm")
+        })
+        Update(func() {
+            UseForm("ProfileForm")
+        })
     })
     
-    // Define custom pages
+    // Static pages
     Page("home", "/")
     Page("about", "/about")
-    
-    // Define form types with validation
-    Type("PostForm", func() {
-        Attribute("title", String, Required(), MinLength(3), MaxLength(100))
-        Attribute("content", String, Required(), MinLength(10))
-        Attribute("published", Boolean)
-    })
 })
 ```
 
 #### 3. Generate the application structure
 
 ```bash
-# Generate interfaces and types
-gluey gen design
+# Generate interfaces, types, and routes from DSL
+gluey gen
 
-# Generate example implementations
-gluey example design
+# Generate example controller implementations and views
+gluey example
 ```
 
 This creates:
-- `gen/` - Generated interfaces, types, and HTTP setup
+- `gen/` - Generated interfaces, types, forms with validation, and HTTP router
 - `app/controllers/` - Controller implementations (yours to customize)
 - `app/views/` - HTML templates (yours to customize)
 - `main.go` - Server entry point
 
 #### 4. Implement your business logic
 
-The generated controllers in `app/controllers/posts.go` are ready to customize:
+The generated forms and controllers are ready to use:
 
-```go
 ```go
 package controllers
 
 import (
     "net/http"
     "blogapp/gen/interfaces"
+    "blogapp/gen/types"
 )
 
 type PostsController struct {
-    // Add your dependencies here (DB, services, etc.)
-}
-
-func (c *PostsController) Index(w http.ResponseWriter, r *http.Request) {
-    // Fetch posts from your database
-    posts := []map[string]any{
-        {"ID": "1", "Title": "Hello World", "Content": "My first post!"},
-    }
-    
-    // Render the index template
-    interfaces.Render(w, "posts/index", map[string]any{
-        "Posts": posts,
-    })
+    BaseController
+    // Add your DB, services, etc.
 }
 
 func (c *PostsController) Create(w http.ResponseWriter, r *http.Request) {
-    var form gen.PostForm
-    if err := interfaces.Bind(r, &form); err != nil {
-        interfaces.Render(w, "posts/new", map[string]any{
-            "Errors": err,
+    // Parse form into generated struct
+    r.ParseForm()
+    var form types.PostForm
+    form.Title = r.FormValue("title")
+    form.Content = r.FormValue("content")
+    form.Published = r.FormValue("published") == "true"
+    
+    // Use generated validation
+    if err := form.Validate(); err != nil {
+        c.Render(w, "posts/new", map[string]any{
             "Form":   form,
+            "Errors": err,
         })
         return
     }
     
-    // Save to database
-    // post := savePost(form)
+    // Save to database using form fields
+    // post := savePost(form.Title, form.Content, form.Published)
     
-    http.Redirect(w, r, "/posts", http.StatusSeeOther)
+    c.Flash(w, "success", "Post created!")
+    c.Redirect(w, r, "/posts")
 }
-```
+
+func (c *PostsController) Index(w http.ResponseWriter, r *http.Request) {
+    // Use generated query params struct
+    var params types.PostsIndexParams
+    params.Search = r.URL.Query().Get("search")
+    params.Page = parseIntOrDefault(r.URL.Query().Get("page"), 1)
+    
+    // Fetch with search/pagination
+    posts := fetchPosts(params.Search, params.Page)
+    
+    c.Render(w, "posts/index", map[string]any{
+        "Posts": posts,
+        "Params": params,
+    })
+}
 ```
 
 #### 5. Run your application
@@ -146,7 +188,7 @@ Visit http://localhost:8000 and you'll see your blog!
 
 ## Full Example
 
-Here's a more complete example showing advanced features:
+Here's a complete example showing the modern resource-centric approach:
 
 ```go
 package design
@@ -154,56 +196,218 @@ package design
 import . "github.com/gobijan/gluey/dsl"
 
 var _ = WebApp("myapp", func() {
-    Description("E-commerce platform")
+    Description("Complete web application with authentication")
     
-    // Products resource with search and pagination
-    Resource("products", func() {
-        Index(func() {
-            Paginate(20)
-            Searchable("name", "description")
-            Filterable("category", "price_range")
+    // Posts with full CRUD and search
+    Resource("posts", func() {
+        // Single form for both create and update
+        Form("PostForm", func() {
+            Attribute("title", String, Required(), MaxLength(200))
+            Attribute("content", String, Required(), MinLength(10))
+            Attribute("category", String, Required())
+            Attribute("tags", ArrayOf(String))
+            Attribute("published", Boolean)
         })
         
-        // Custom forms for different actions
+        Create(func() {
+            UseForm("PostForm")
+        })
         Update(func() {
-            Form("EditProductForm")
-        })
-    })
-    
-    // Nested resources
-    Resource("users", func() {
-        Resource("orders", func() {
-            BelongsTo("user")
-            Actions("index", "show", "create")
+            UseForm("PostForm")
         })
         
-        // Authentication requirements
-        Auth("authenticated").Except("new", "create")
-        Auth("admin").Only("destroy")
-    })
-    
-    // Custom pages with multiple routes
-    Page("checkout", func() {
-        Route("GET", "/checkout")
-        Route("POST", "/checkout")
-        Form("CheckoutForm")
-    })
-    
-    // Complex form with nested attributes
-    Type("CheckoutForm", func() {
-        Attribute("shipping_address", func() {
-            Attribute("street", String, Required())
-            Attribute("city", String, Required())
-            Attribute("zip", String, Pattern("^\\d{5}$"))
+        // Query parameters for index
+        Index(func() {
+            Params(func() {
+                Param("search", String)
+                Param("category", String)
+                Param("page", Int)
+                Param("per_page", Int)
+            })
         })
-        Attribute("payment_method", String, Enum("credit_card", "paypal"))
-        Attribute("items", ArrayOf(func() {
-            Attribute("product_id", String, Required())
-            Attribute("quantity", Int, Min(1))
-        }))
+    })
+    
+    // Users with different forms for different actions
+    Resource("users", func() {
+        // Signup form for registration
+        Form("SignupForm", func() {
+            Attribute("name", String, Required())
+            Attribute("email", String, Required(), Format(FormatEmail))
+            Attribute("password", String, Required(), MinLength(8))
+            Attribute("password_confirmation", String, Required())
+            Attribute("terms_accepted", Boolean, Required())
+        })
+        
+        // Profile form for updates
+        Form("ProfileForm", func() {
+            Attribute("name", String)
+            Attribute("email", String, Format(FormatEmail))
+            Attribute("bio", String, MaxLength(500))
+            Attribute("website", String, Format(FormatURL))
+        })
+        
+        Create(func() {
+            UseForm("SignupForm")
+        })
+        Update(func() {
+            UseForm("ProfileForm")
+        })
+        
+        // Limit available actions
+        Actions("index", "show", "new", "create", "edit", "update")
+    })
+    
+    // Session for authentication (singular resource)
+    Resource("session", func() {
+        Singular() // Makes routes like /session instead of /sessions
+        
+        Form("LoginForm", func() {
+            Attribute("email", String, Required(), Format(FormatEmail))
+            Attribute("password", String, Required())
+            Attribute("remember_me", Boolean)
+        })
+        
+        // Only login/logout actions
+        Actions("new", "create", "destroy")
+        
+        Create(func() {
+            UseForm("LoginForm")
+        })
+    })
+    
+    // Password reset as a resource
+    Resource("password_resets", func() {
+        Form("RequestResetForm", func() {
+            Attribute("email", String, Required(), Format(FormatEmail))
+        })
+        
+        Form("ResetPasswordForm", func() {
+            Attribute("password", String, Required(), MinLength(8))
+            Attribute("password_confirmation", String, Required())
+            Attribute("token", String, Required())
+        })
+        
+        Actions("new", "create", "edit", "update")
+        
+        Create(func() {
+            UseForm("RequestResetForm")
+        })
+        Update(func() {
+            UseForm("ResetPasswordForm")
+        })
+    })
+    
+    // Search as a resource (for complex search forms)
+    Resource("searches", func() {
+        Form("AdvancedSearchForm", func() {
+            Attribute("query", String, Required())
+            Attribute("type", String, Enum("posts", "users", "all"))
+            Attribute("date_from", String, Format(FormatDate))
+            Attribute("date_to", String, Format(FormatDate))
+            Attribute("sort_by", String, Enum("relevance", "date", "popularity"))
+        })
+        
+        Actions("new", "create") // Only search form and results
+        
+        Create(func() {
+            UseForm("AdvancedSearchForm")
+        })
+    })
+    
+    // Static pages
+    Page("home", "/")
+    Page("about", "/about")
+    Page("terms", "/terms")
+    Page("privacy", "/privacy")
+    })
+```
+
+## Key Concepts
+
+### Everything is a Resource
+
+In Gluey, forms belong to resources. This creates a consistent, RESTful approach:
+
+- **Authentication**: `session` resource with login form
+- **User Registration**: `users` resource with signup form  
+- **Search**: `searches` resource with search form
+- **Password Reset**: `password_resets` resource with reset forms
+
+### Resource-Level Forms
+
+Forms are defined within resources, keeping related code together:
+
+```go
+Resource("posts", func() {
+    // Form defined inside the resource
+    Form("PostForm", func() {
+        Attribute("title", String, Required())
+        Attribute("content", String, Required())
+    })
+    
+    // Bind form to actions
+    Create(func() {
+        UseForm("PostForm")
+    })
+    Update(func() {
+        UseForm("PostForm")  // Reuse same form
     })
 })
 ```
+
+### Different Forms for Different Actions
+
+When create and update need different fields:
+
+```go
+Resource("users", func() {
+    Form("SignupForm", func() {
+        Attribute("email", String, Required())
+        Attribute("password", String, Required())
+        Attribute("password_confirmation", String, Required())
+    })
+    
+    Form("ProfileForm", func() {
+        Attribute("name", String)
+        Attribute("bio", String)
+        // No password fields for profile updates
+    })
+    
+    Create(func() {
+        UseForm("SignupForm")
+    })
+    Update(func() {
+        UseForm("ProfileForm")
+    })
+})
+```
+
+### Singular Resources
+
+For resources that don't have multiple instances (like session):
+
+```go
+Resource("session", func() {
+    Singular()  // Routes: /session/new, /session, DELETE /session
+    Actions("new", "create", "destroy")  // Only login/logout
+})
+```
+
+### Query Parameters
+
+Define typed query parameters for index/search actions:
+
+```go
+Index(func() {
+    Params(func() {
+        Param("search", String)
+        Param("page", Int)
+        Param("per_page", Int)
+    })
+})
+```
+
+This generates a typed struct with all parameters.
 
 ## Documentation
 

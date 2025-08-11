@@ -1,5 +1,44 @@
 package expr
 
+// ActionConfig holds configuration for a resource action.
+type ActionConfig struct {
+	// Action name (for identification)
+	Action string
+	// FormName is the name of the form to use for this action
+	FormName string
+	// Params holds query parameter definitions for index/show actions
+	Params []*ParamExpr
+}
+
+// EvalName returns the name of the action config.
+func (a *ActionConfig) EvalName() string {
+	return a.Action
+}
+
+// Validate validates the action config.
+func (a *ActionConfig) Validate() error {
+	return nil
+}
+
+// Prepare prepares the action config.
+func (a *ActionConfig) Prepare() {
+	// Nothing to prepare yet
+}
+
+// ParamExpr represents a query parameter.
+type ParamExpr struct {
+	// Name is the parameter name
+	Name string
+	// Type is the parameter type
+	Type DataType
+	// Default value
+	Default interface{}
+	// Max value (for numeric types)
+	Max interface{}
+	// Description
+	Description string
+}
+
 // ResourceExpr represents a RESTful resource.
 type ResourceExpr struct {
 	// Name is the resource name (e.g., "posts").
@@ -22,6 +61,12 @@ type ResourceExpr struct {
 	CustomForms map[string]string // action -> form name
 	// Layout override.
 	Layout string
+	// Forms defined within this resource
+	Forms map[string]*FormExpr
+	// Whether this is a singular resource (e.g., session vs sessions)
+	Singular bool
+	// Action configurations
+	ActionConfigs map[string]*ActionConfig
 }
 
 // EvalName returns the name of the resource.
@@ -47,6 +92,12 @@ func (r *ResourceExpr) Prepare() {
 	}
 	if r.Pagination == nil {
 		r.Pagination = make(map[string]int)
+	}
+	if r.Forms == nil {
+		r.Forms = make(map[string]*FormExpr)
+	}
+	if r.ActionConfigs == nil {
+		r.ActionConfigs = make(map[string]*ActionConfig)
 	}
 	if r.SearchableFields == nil {
 		r.SearchableFields = make(map[string][]string)
@@ -94,6 +145,14 @@ func (r *ResourceExpr) HasAction(action string) bool {
 
 // NewFormName returns the form name for the new/create actions.
 func (r *ResourceExpr) NewFormName() string {
+	// Check action configs first
+	if config, ok := r.ActionConfigs["create"]; ok && config.FormName != "" {
+		return config.FormName
+	}
+	if config, ok := r.ActionConfigs["new"]; ok && config.FormName != "" {
+		return config.FormName
+	}
+	// Then check custom forms (legacy)
 	if form, ok := r.CustomForms["new"]; ok {
 		return form
 	}
@@ -106,6 +165,14 @@ func (r *ResourceExpr) NewFormName() string {
 
 // EditFormName returns the form name for the edit/update actions.
 func (r *ResourceExpr) EditFormName() string {
+	// Check action configs first
+	if config, ok := r.ActionConfigs["update"]; ok && config.FormName != "" {
+		return config.FormName
+	}
+	if config, ok := r.ActionConfigs["edit"]; ok && config.FormName != "" {
+		return config.FormName
+	}
+	// Then check custom forms (legacy)
 	if form, ok := r.CustomForms["edit"]; ok {
 		return form
 	}
