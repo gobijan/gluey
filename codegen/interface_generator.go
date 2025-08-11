@@ -168,9 +168,7 @@ func (g *InterfaceGenerator) generateTypes() error {
 		return err
 	}
 
-	// Change package name to "types"
-	content = "package types\n" + content[len("package "+g.app.Name+"\n"):]
-
+	// TypesGenerator already generates with "package types", so use content as-is
 	filename := filepath.Join(g.outDir, "types", "forms.go")
 	return os.WriteFile(filename, []byte(content), 0644)
 }

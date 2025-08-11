@@ -96,7 +96,9 @@ func (g *ExampleGenerator) generateBaseController() error {
 import (
 	"html/template"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 // BaseController provides common functionality for all controllers.
@@ -106,20 +108,46 @@ type BaseController struct {
 
 // NewBaseController creates a new base controller.
 func NewBaseController() *BaseController {
-	// Load templates
-	tmpl := template.New("base")
-	
-	// Try to load all template files
-	patterns := []string{
-		filepath.Join(g.OutputDir, "app/views/layouts/*.html"),
-		filepath.Join(g.OutputDir, "app/views/shared/*.html"),
-		filepath.Join(g.OutputDir, "app/views/*/*.html"),
+	// Load templates with custom functions
+	funcMap := template.FuncMap{
+		"title": strings.Title,
+		"upper": strings.ToUpper,
+		"lower": strings.ToLower,
 	}
 	
-	for _, pattern := range patterns {
-		files, _ := filepath.Glob(pattern)
-		if len(files) > 0 {
-			tmpl = template.Must(tmpl.ParseFiles(files...))
+	// Load all template files
+	tmpl := template.New("").Funcs(funcMap)
+	
+	// Load layout templates
+	layoutFiles, _ := filepath.Glob("app/views/layouts/*.html")
+	for _, file := range layoutFiles {
+		content, err := os.ReadFile(file)
+		if err == nil {
+			name := filepath.Base(file)
+			template.Must(tmpl.New(name).Parse(string(content)))
+		}
+	}
+	
+	// Load shared templates  
+	sharedFiles, _ := filepath.Glob("app/views/shared/*.html")
+	for _, file := range sharedFiles {
+		content, err := os.ReadFile(file)
+		if err == nil {
+			name := filepath.Base(file)
+			template.Must(tmpl.New(name).Parse(string(content)))
+		}
+	}
+	
+	// Load view templates
+	viewFiles, _ := filepath.Glob("app/views/*/*.html")
+	for _, file := range viewFiles {
+		if !strings.Contains(file, "/layouts/") && !strings.Contains(file, "/shared/") {
+			content, err := os.ReadFile(file)
+			if err == nil {
+				// Use relative path as template name (e.g., "posts/index.html")
+				name := strings.TrimPrefix(file, "app/views/")
+				template.Must(tmpl.New(name).Parse(string(content)))
+			}
 		}
 	}
 	
@@ -137,11 +165,22 @@ func (c *BaseController) Render(w http.ResponseWriter, view string, data map[str
 	// Add common data
 	data["AppName"] = "` + ToTitle(g.app.Name) + `"
 	
-	// Execute the layout with the view
-	data["View"] = view
-	
+	// Render the view content first
+	var contentBuf strings.Builder
 	if c.templates != nil {
-		err := c.templates.ExecuteTemplate(w, "layouts/application.html", data)
+		err := c.templates.ExecuteTemplate(&contentBuf, view, data)
+		if err != nil {
+			// If the specific view doesn't exist, just use empty content
+			contentBuf.Reset()
+		}
+	}
+	
+	// Add the rendered content to data
+	data["Content"] = template.HTML(contentBuf.String())
+	
+	// Execute the layout with the rendered content
+	if c.templates != nil {
+		err := c.templates.ExecuteTemplate(w, "application.html", data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -414,12 +453,6 @@ func (g *ExampleGenerator) generateLayout() error {
 
 	viewGen := NewViewsGenerator(g.app)
 	content, _ := viewGen.GenerateLayout()
-
-	// Update to use template blocks
-	content = strings.Replace(content,
-		`{{template "content" .Data}}`,
-		`{{template .View .}}`,
-		1)
 
 	fmt.Printf("  Creating %s\n", filename)
 	return os.WriteFile(filename, []byte(content), 0644)

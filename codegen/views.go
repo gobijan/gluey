@@ -68,9 +68,9 @@ func (g *ViewsGenerator) GenerateLayout() (string, error) {
     </header>
     
     <div class="container">
-        {{template "shared/_flash.html" .Flash}}
+        {{template "_flash.html" .Flash}}
         
-        {{template "content" .Data}}
+        {{.Content}}
     </div>
 </body>
 </html>

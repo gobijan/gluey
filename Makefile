@@ -64,11 +64,11 @@ build:
 	@$(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "$(GREEN)✓ Build complete: $(BUILD_DIR)/$(BINARY_NAME)$(NC)"
 
-## install: Install gluey to $$GOPATH/bin
+## install: Install gluey globally using go install
 install:
-	@echo "$(BLUE)Installing gluey...$(NC)"
-	@$(GOBUILD) $(LDFLAGS) -o $(GOPATH)/bin/$(BINARY_NAME) $(MAIN_PATH)
-	@echo "$(GREEN)✓ Installed to $(GOPATH)/bin/$(BINARY_NAME)$(NC)"
+	@echo "$(BLUE)Installing gluey globally...$(NC)"
+	@$(GOCMD) install $(LDFLAGS) $(MAIN_PATH)
+	@echo "$(GREEN)✓ Installed gluey to $$GOPATH/bin$(NC)"
 
 ## clean: Clean build artifacts and test cache
 clean:

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const Version = "0.1.0"
@@ -47,6 +48,7 @@ Usage:
 
 Commands:
   new <name>    Create a new Gluey project
+                Options: --local  Use local gluey source (for development)
   gen           Generate interfaces and contracts from DSL (alias: generate)
   example       Generate example implementation (only creates new files)
   version       Show version information
@@ -54,6 +56,7 @@ Commands:
 
 Examples:
   gluey new myapp       # Create a new project called 'myapp'
+  gluey new myapp --local  # Create project using local gluey source
   gluey gen            # Generate interfaces from design/app.go
   gluey example        # Generate example controllers and views
   gluey version        # Show version
@@ -76,7 +79,46 @@ func runExampleCommand() {
 }
 
 func runNew(projectName string) {
+	// Check if we're in local development mode
+	localMode := false
+	glueyPath := ""
+
+	// Check if --local flag is present or if we're in the gluey source directory
+	for i, arg := range os.Args {
+		if arg == "--local" {
+			localMode = true
+			// Remove the flag from args
+			os.Args = append(os.Args[:i], os.Args[i+1:]...)
+			break
+		}
+	}
+
+	// Auto-detect if we're in gluey source directory
+	if !localMode {
+		if cwd, err := os.Getwd(); err == nil {
+			if _, err := os.Stat(filepath.Join(cwd, "go.mod")); err == nil {
+				if data, err := os.ReadFile(filepath.Join(cwd, "go.mod")); err == nil {
+					if strings.Contains(string(data), "module github.com/gobijan/gluey") {
+						fmt.Println("📍 Detected gluey source directory. Using local mode.")
+						localMode = true
+						glueyPath = cwd
+					}
+				}
+			}
+		}
+	}
+
+	// If local mode and no path found, try to find it
+	if localMode && glueyPath == "" {
+		if cwd, err := os.Getwd(); err == nil {
+			glueyPath = cwd
+		}
+	}
+
 	fmt.Printf("🚀 Creating new Gluey project: %s\n", projectName)
+	if localMode {
+		fmt.Println("   Using local development mode")
+	}
 
 	// Create project directory
 	if err := os.Mkdir(projectName, 0755); err != nil {
@@ -133,12 +175,27 @@ var _ = WebApp("%s", func() {
 	}
 
 	// Create go.mod
-	goModContent := fmt.Sprintf(`module %s
+	var goModContent string
+	if localMode {
+		// Use replace directive for local development
+		absProjectPath, _ := filepath.Abs(projectName)
+		relativePath, _ := filepath.Rel(absProjectPath, glueyPath)
+		goModContent = fmt.Sprintf(`module %s
+
+go 1.21
+
+require github.com/gobijan/gluey v0.0.0
+
+replace github.com/gobijan/gluey => %s
+`, projectName, relativePath)
+	} else {
+		goModContent = fmt.Sprintf(`module %s
 
 go 1.21
 
 require github.com/gobijan/gluey v%s
 `, projectName, Version)
+	}
 
 	goModFile := filepath.Join(projectName, "go.mod")
 	if err := os.WriteFile(goModFile, []byte(goModContent), 0644); err != nil {
@@ -260,7 +317,14 @@ go.work.sum
 	fmt.Printf("\n✅ Project '%s' created successfully!\n\n", projectName)
 	fmt.Println("Next steps:")
 	fmt.Printf("  cd %s\n", projectName)
-	fmt.Println("  gluey gen        # Generate code from DSL")
+	if localMode {
+		fmt.Println("  go mod tidy      # Download dependencies")
+	}
+	fmt.Println("  gluey gen        # Generate interfaces from DSL")
+	fmt.Println("  gluey example    # Generate example implementations")
 	fmt.Println("  go run main.go   # Run your application")
+	if localMode {
+		fmt.Println("\n📝 Note: Using local gluey source for development")
+	}
 	fmt.Println("\nHappy coding! 🎉")
 }
