@@ -256,7 +256,7 @@ func (g *InterfaceGenerator) generateRouterContent() string {
 // addResourceRoutes adds resource routes to the router code.
 func (g *InterfaceGenerator) addResourceRoutes(code *string, resource *expr.ResourceExpr) {
 	controllerVar := "c." + toTitle(resource.Name)
-	
+
 	// Use singular path for singular resources
 	basePath := "/" + resource.Name
 	if resource.Singular {
@@ -316,7 +316,7 @@ func (g *InterfaceGenerator) addResourceRoutes(code *string, resource *expr.Reso
 			*code += fmt.Sprintf("\tmux.HandleFunc(\"POST %s\", %s.Create)\n", basePath, controllerVar)
 		}
 	}
-	
+
 	*code += "\n"
 }
 
