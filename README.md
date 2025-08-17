@@ -1,4 +1,4 @@
-# Gluey
+# Gluey (Weekend fun POC - Do not use!)
 
 **The web framework that glues Go together.** Rails-like productivity with Go's performance and type safety.
 
